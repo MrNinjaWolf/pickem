@@ -29,9 +29,9 @@ replace everything, then **Publish**. Firebase does not read the copy in this re
 
 ## Things to know
 
-- Creating logins in the app uses Firebase's sign-up feature, so it must stay switched on
-  (Authentication > Settings > User actions). Anyone who finds the API key could make an account
-  too, but it can't see anything until the administrator tags it.
+- Creating logins on the Admin tab goes through the server (it needs `FIREBASE_SERVICE_ACCOUNT`).
+  With that set up, switch off Firebase's public sign-up so nobody else can make accounts:
+  Authentication > Settings > User actions > untick **Enable create (sign-up)**.
 - The app stops picks at kickoff. The database rules don't check kickoff times, so a technical
   user could still change their own pick after a game starts.
 
@@ -107,3 +107,11 @@ email settings above and publishing the current `database.rules.json`.
 - the "your pick won/lost" notification after each game
 - the sender name, and a note added to every email
 - **Send a reminder now**, to everyone still missing picks
+
+## Admin tools
+
+- **Databases:** create a new database (you're added to it) and switch between them on your Profile page.
+- **Players:** add, remove, rename (✎, moves all their picks), and reset a password (🔑).
+- **Activity:** admin changes, password resets and manual sends from the last 6 months.
+- The scheduled job tidies up once a day: records for weeks over 60 days old, used or expired
+  reset links, and activity older than 6 months.

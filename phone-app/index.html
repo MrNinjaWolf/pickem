@@ -101,6 +101,7 @@ select option{color:#000}
 .team .nm{font-size:11px;opacity:.8;text-align:center;line-height:1.15}
 .team .tag{font-size:10px;font-weight:800;letter-spacing:.12em;height:13px}
 .team .rec{font-size:13px;font-weight:800}
+.team .mini.lp{font-weight:700;opacity:.9}
 .team .mini{font-size:10px;opacity:.75;text-align:center;line-height:1.2;min-height:24px}   /* room kept so cards don't grow when stats arrive */
 .mid{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
 .sc{font-weight:800;font-size:20px;white-space:nowrap;font-variant-numeric:tabular-nums}
@@ -108,7 +109,6 @@ select option{color:#000}
 .st.live{color:var(--bad)}
 .st.live .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--bad);margin-right:4px;animation:blink 1.2s ease-in-out infinite}
 .st.fin{color:var(--green)}
-#games .btn.more{width:100%}
 .btn.clear{width:100%;background:none;box-shadow:none;border:1px solid rgba(248,113,113,.5);color:var(--bad);padding:10px}
 .wz .btn.clear{margin-bottom:12px}
 
@@ -214,6 +214,9 @@ td.neg{color:var(--bad)}
 .lrow.lead .lsc{color:#fff}
 .lrow.trail .lsc{color:var(--muted)}
 .lmeta{display:flex;justify-content:space-between;gap:8px;margin-top:6px;padding-top:8px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.lhead{margin:8px 2px 0;font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.lmeta .f{color:var(--green);font-weight:800}
+.lcard.fin{opacity:.92}
 .lmeta .q{color:var(--bad);font-weight:800}
 .lmeta .q::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--bad);margin-right:6px;animation:blink 1.2s ease-in-out infinite}
 .lpick{margin-top:8px;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:var(--surface2)}
@@ -278,6 +281,12 @@ td.neg{color:var(--bad)}
 .drv.cur summary .res{color:var(--gold)}
 
 /* ---------- season stats */
+.tr{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+.tr i{font-style:normal;margin-left:10px;font-size:13px;font-weight:700}
+.wkw{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.wkw span{font-size:12px;background:var(--surface2);border-radius:999px;padding:5px 10px;color:var(--muted)}
+.wkw b{color:var(--gold)}
+#sttitle select{margin-left:8px;font-size:14px;padding:4px 8px;vertical-align:middle}
 .tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .tile{background:var(--surface2);border-radius:14px;padding:10px 12px}
 .tile b{display:block;font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
@@ -312,18 +321,9 @@ td.neg{color:var(--bad)}
 .login h2,.noacc h2{margin:0 0 6px;font-size:24px;letter-spacing:-.02em}
 .login p,.noacc p{color:var(--muted);font-size:14px;line-height:1.5}
 .login label{display:block;margin:14px 0 6px;font-size:13px;color:var(--muted);font-weight:600}
-.login input,dialog input,dialog select{width:100%}
+.login input{width:100%}
 .login .btn{width:100%;margin-top:20px;padding:14px}
 .err{min-height:20px;margin-top:12px;color:var(--bad);font-size:14px}
-details{margin-top:18px;color:var(--muted);font-size:13px}
-summary{cursor:pointer;padding:4px 0}
-dialog{background:#0d1830;color:var(--text);border:1px solid var(--line);border-radius:24px;padding:20px;width:min(94vw,440px);max-height:88vh;box-shadow:0 30px 80px rgba(0,0,0,.6)}
-dialog[open]{animation:dlgIn .32s var(--spring)}
-dialog::backdrop{background:rgba(2,6,15,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-dialog h2{margin:0 0 4px;font-size:22px;letter-spacing:-.02em}
-dialog label{display:block;margin:12px 0 6px;font-size:13px;color:var(--muted);font-weight:600}
-dialog p{font-size:14px;line-height:1.45;color:var(--muted)}
-dialog p b{color:var(--text)}
 .sect{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
 .sect h3{margin:0 0 4px;font-size:16px}
 .row{display:flex;gap:8px;margin-top:16px}
@@ -338,6 +338,10 @@ dialog p b{color:var(--text)}
 .plist .you{font-size:11px;color:var(--muted);font-weight:600}
 .plist input{flex:1.5;min-width:0;padding:8px 10px;font-size:14px;border-radius:10px}
 .plist input.saved{border-color:rgba(52,211,153,.6)}
+.alog{list-style:none;margin:10px 0 0;padding:0;max-height:320px;overflow:auto;font-size:13px}
+.alog li{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}
+.alog li:last-child{border-bottom:0}
+.alog small{flex:none;width:96px;color:var(--muted)}
 .plist .x.key{background:rgba(255,197,61,.12);font-size:14px}
 .plist .x{border:0;background:rgba(248,113,113,.12);color:var(--bad);width:32px;height:32px;border-radius:10px;font-size:16px;flex:none}
 #admbox .btn.full{width:100%;margin-top:14px}
@@ -478,6 +482,7 @@ dialog p b{color:var(--text)}
       <div id="sttitle"></div>
       <div id="stnote"></div>
       <div class="tw"><table id="sttable"></table></div>
+      <div id="trophies"></div>
       <div id="mystats"></div>
     </section>
     <section id="live" class="view hide">
@@ -490,6 +495,7 @@ dialog p b{color:var(--text)}
         <div class="wzbox pfform">
           <h3 style="margin:0">Email</h3>
           <p class="muted" style="margin:4px 0 0">Used for pick reminders and weekly results.</p>
+          <input id="pfemailpw" type="password" autocomplete="current-password" placeholder="Current password (to change your email)" style="width:100%;margin-top:10px">
           <div class="addrow"><input id="pfemail" type="email" inputmode="email" autocomplete="email" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Email"><button class="btn" id="pfemailbtn" type="button">Save</button></div>
           <div class="err" id="pfemailmsg"></div>
         </div>
@@ -537,6 +543,12 @@ dialog p b{color:var(--text)}
           <div class="err" id="mailmsg"></div>
           <p id="maillast" style="margin:6px 0 0;color:var(--muted);font-size:12px"></p>
         </div>
+        <div class="wzbox">
+          <h3 style="margin:0">Databases</h3>
+          <p class="muted" style="margin:4px 0 0">You're working in <b id="dbcur"></b>. Each player only sees the databases they've been given. Switch databases on your Profile page.</p>
+          <div class="addrow"><input id="newdb" type="text" maxlength="30" placeholder="New database name" aria-label="New database name"><button class="btn" id="newdbbtn" type="button">Create</button></div>
+          <div class="err" id="newdbmsg"></div>
+        </div>
         <div class="wzbox ns" id="nsbox">
           <h3 style="margin:0">Emails &amp; notifications</h3>
           <p class="muted" style="margin:4px 0 0">Changes apply within 15 minutes. No rebuild needed.</p>
@@ -564,6 +576,11 @@ dialog p b{color:var(--text)}
           <p class="muted" id="ns-next" style="margin:8px 0 0"></p>
           <button class="btn alt full" id="ns-now" type="button">Send a reminder now</button>
           <div class="err" id="ns-nowmsg"></div>
+        </div>
+        <div class="wzbox">
+          <h3 style="margin:0">Activity</h3>
+          <p class="muted" style="margin:4px 0 0">Admin changes, password resets and sends from the last 6 months.</p>
+          <ul class="alog" id="alog"></ul>
         </div>
       </div>
     </section>
@@ -657,7 +674,7 @@ function friendly(e) {
   if (/TOO_MANY_ATTEMPTS/.test(m)) return 'Too many attempts. Wait a few minutes and try again.';
   if (/EMAIL_EXISTS/.test(m)) return 'That username already exists.';
   if (/WEAK_PASSWORD/.test(m)) return 'The password needs at least 6 characters.';
-  if (/ADMIN_ONLY_OPERATION/.test(m)) return 'Creating accounts is turned off in Firebase (Authentication > Settings > User actions).';
+  if (/ADMIN_ONLY_OPERATION/.test(m)) return 'Creating logins needs the FIREBASE_SERVICE_ACCOUNT setting in Netlify (Firebase sign-up is switched off).';
   if (/^HTTP 40[13]$/.test(m)) return 'The database refused the change. Check that the latest rules are published.';
   if (/OPERATION_NOT_ALLOWED/.test(m)) return 'Email/password sign-in is not turned on in Firebase.';
   if (/API key|API_KEY/i.test(m)) return 'The Firebase Web API key is not valid.';
@@ -762,7 +779,7 @@ function pull() {
       if (JSON.stringify(rp) === JSON.stringify([...profiles].sort(cmp)) && sameMap(rk, picks)) { chip(); return 'same'; }
       profiles = rp; picks = rk;
       profile = myProfile();
-      save(); buildSelects(); render(); chip();
+      save(); updateHeader(); render(); chip();
       return 'remote';
     } catch (e) { syncProblem(e); return 'error'; }
   });
@@ -798,8 +815,16 @@ function clearLocalData() {
   try { Object.keys(localStorage).filter(k => k.startsWith('nflpickem.db.')).forEach(k => localStorage.removeItem(k)); } catch (e) { /* blocked */ }
   leagues = []; league = ''; setLS('leagues', null); setLS('league', null);
 }
-function manualLogout() {
+async function manualLogout() {
   if (league && outbox(league).length && !confirm('Some changes have not reached the database yet. Log out anyway and lose them?')) return;
+  try {                                              // so the next person on this phone doesn't get your notifications
+    const sub = await currentSub();
+    if (sub && auth) {
+      const id = await subId(sub.endpoint);
+      await sub.unsubscribe();
+      await Promise.race([dbCall('DELETE', cfg.url + `/push/${encodeURIComponent(auth.user)}/${id}`), new Promise(r => setTimeout(r, 3000))]).catch(() => {});
+    }
+  } catch (e) { /* offline: the server forgets the phone once pushes to it fail */ }
   clearLocalData(); logout('');
 }
 function logout(msg) {
@@ -854,7 +879,7 @@ async function enterLeague(id) {
   showScreen('app');
   if (!isAdmin() && !$('#admin').classList.contains('hide')) showTab('picks');
   animateList = true;
-  buildSelects(); chip();
+  updateHeader(); chip();
   games = LS('games.' + wk()) || [];
   render();
   if (!loadedOnce) { loadedOnce = true; loadLive(); await loadGames(true); } else await loadGames(false);
@@ -909,7 +934,7 @@ async function loadGames(initial) {
       let p = PERIODS.find(x => x.type === type && x.week === week);
       if (!p) { p = {label: `Season type ${type} \u2013 Week ${week}`, type, week}; PERIODS.push(p); }
       period = p;
-      buildSelects();
+      updateHeader();
     } else if (asked !== period) {
       return;                                   // user changed weeks while loading
     }
@@ -1014,7 +1039,8 @@ function addProfile(raw) {
   if (profiles.some(p => p.toLowerCase() === n.toLowerCase())) { toast('That name is already on the list'); return false; }
   profiles.push(n); profiles.sort(cmp); profile = myProfile();
   syncSend('PUT', '/profiles/' + encodeURIComponent(n), true);
-  save(); buildSelects(); render(); toast(`Added ${n}`);
+  save(); updateHeader(); render(); toast(`Added ${n}`);
+  adminLog(`Added "${n}" to ${league}`);
   return true;
 }
 function deleteProfile(name) {
@@ -1023,7 +1049,8 @@ function deleteProfile(name) {
   const u = name.toLowerCase(), lg = league;
   if (/^[a-z0-9_-]+$/.test(u) && u !== auth.user && confirm(`Also stop the login "${u}" from seeing "${lg}"?`))
     enqueue(() => dbCall('DELETE', cfg.url + '/access/' + encodeURIComponent(u) + '/leagues/' + encodeURIComponent(lg)))
-      .then(() => toast(`"${u}" can no longer see "${lg}"`), e => toast(friendly(e)));
+      .then(() => { toast(`"${u}" can no longer see "${lg}"`); adminLog(`Removed "${u}"'s access to ${lg}`); }, e => toast(friendly(e)));
+  adminLog(`Removed "${name}" from ${lg} (their picks were deleted)`);
   for (const k of Object.keys(picks)) {
     if (k.startsWith(name + '|')) {
       const [p, w, g] = k.split('|');
@@ -1034,7 +1061,7 @@ function deleteProfile(name) {
   syncSend('DELETE', '/profiles/' + encodeURIComponent(name));
   profiles = profiles.filter(p => p !== name);
   profile = myProfile();
-  save(); buildSelects(); render();
+  save(); updateHeader(); render();
 }
 
 /** Administrator: creates a username and password, gives it the current database, and adds it to the list. */
@@ -1047,19 +1074,25 @@ async function createLogin() {
   try {
     let existed = false;
     try {
-      await authPost('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + encodeURIComponent(cfg.key),
-        {email: u + DOMAIN, password: p, returnSecureToken: false});
+      try { await api('/api/admin-create-login', {idToken: await idToken(), user: u, password: p}); }
+      catch (e) {
+        if (!/FIREBASE_SERVICE_ACCOUNT|isn't set up for this/.test(e.message)) throw e;
+        // the server isn't set up for it yet: fall back to Firebase sign-up (needs sign-up switched on)
+        await authPost('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + encodeURIComponent(cfg.key),
+          {email: u + DOMAIN, password: p, returnSecureToken: false});
+      }
     } catch (e) {
       if (!/EMAIL_EXISTS/.test(e.message)) throw e;
       if (!confirm(`The username "${u}" already exists, and its password was not changed. Give that account access to "${lg}" anyway?`)) { msg(''); return; }
       existed = true;
     }
     await dbCall('PUT', cfg.url + '/access/' + encodeURIComponent(u) + '/leagues/' + encodeURIComponent(lg), true);
+    adminLog(`Gave "${u}" access to ${lg}`);
     if (lg === league && !profiles.some(x => x.toLowerCase() === u)) {
       const n = u.charAt(0).toUpperCase() + u.slice(1);
       profiles.push(n); profiles.sort(cmp); save();
       syncSend('PUT', '/profiles/' + encodeURIComponent(n), true);
-      buildSelects(); render();
+      updateHeader(); render();
     }
     $('#nuuser').value = ''; $('#nupass').value = '';
     msg(existed ? `"${u}" can now see "${lg}".` : `Created "${u}". They can log in now.`);
@@ -1069,7 +1102,7 @@ async function createLogin() {
 
 // ---------------------------------------------------------------- rendering
 /** Updates the header (your name, the week and its arrows), the tabs and the Admin page. */
-function buildSelects() {
+function updateHeader() {
   const me = myProfile() || (auth ? auth.user : '');
   $('#mename').textContent = me;
   $('#meav').textContent = (me || '?').charAt(0).toUpperCase();
@@ -1096,7 +1129,7 @@ function setPeriod(i, dir) {
   period = PERIODS[i];
   resetWizard(); animateList = true;
   games = LS('games.' + wk()) || [];
-  buildSelects();
+  updateHeader();
   const m = $('#wkmid'); m.classList.remove('slide-l', 'slide-r'); void m.offsetWidth; m.classList.add(dir > 0 ? 'slide-l' : 'slide-r');
   render(); setStatus('Loading ' + period.label + '\u2026'); loadGames(false);
 }
@@ -1125,6 +1158,7 @@ async function saveEmail(input) {
     await dbCall(v ? 'PUT' : 'DELETE', cfg.url + '/emails/' + encodeURIComponent(u), v || undefined);
     if (emails) { if (v) emails[u] = v; else delete emails[u]; }
     input.classList.add('saved'); toast(v ? 'Email saved' : 'Email removed');
+    adminLog(v ? `Changed ${u}'s email` : `Removed ${u}'s email`);
   } catch (e) { toast(friendly(e)); }
 }
 const periodName = key => { const [, t, w] = key.split('-').map(Number); const p = PERIODS.find(x => x.type === t && x.week === w); return p ? p.label : key; };
@@ -1148,6 +1182,48 @@ async function sendTestEmail() {
     m.style.color = 'var(--green)'; m.textContent = `Sent to ${j.to}. Check that inbox (and its spam folder).`;
   } catch (e) { m.style.color = ''; m.textContent = e.message; }
   b.disabled = false;
+}
+
+// ---------------------------------------------------------------- administrator: activity log
+function adminLog(what) {
+  if (!isAdmin()) return;
+  dbCall('POST', cfg.url + '/log', {t: Date.now(), who: auth.user, what: String(what).slice(0, 300)}).catch(() => {});
+}
+async function loadActivity() {
+  const box = $('#alog');
+  try {
+    const all = Object.values((await dbCall('GET', cfg.url + '/log')) || {}).filter(e => e && e.t).sort((a, b) => b.t - a.t).slice(0, 40);
+    box.innerHTML = all.length ? all.map(e => `<li><small>${esc(new Date(e.t).toLocaleString([], {month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'}))}</small>` +
+      `<span>${esc(e.what)}</span></li>`).join('') : '<li class="muted">Nothing yet.</li>';
+  } catch (e) { box.innerHTML = '<li class="muted">Publish the latest database rules to see activity.</li>'; }
+}
+
+// ---------------------------------------------------------------- administrator: databases and renaming
+async function createDatabase() {
+  const m = $('#newdbmsg'), name = $('#newdb').value.trim();
+  m.classList.remove('ok');
+  if (!/^[A-Za-z0-9 _-]{1,30}$/.test(name)) { m.textContent = 'Use up to 30 letters, numbers, spaces, - or _.'; return; }
+  if (leagues.some(l => l.toLowerCase() === name.toLowerCase())) { m.textContent = 'You already have a database with that name.'; return; }
+  $('#newdbbtn').disabled = true;
+  try {
+    await dbCall('PUT', cfg.url + `/access/${encodeURIComponent(auth.user)}/leagues/${encodeURIComponent(name)}`, true);
+    const me = myProfile() || (auth.user.charAt(0).toUpperCase() + auth.user.slice(1));
+    await dbCall('PUT', cfg.url + `/leagues/${encodeURIComponent(name)}/profiles/${encodeURIComponent(me)}`, true);
+    leagues = [...leagues, name].sort(cmp); setLS('leagues', leagues);
+    adminLog(`Created the database "${name}"`);
+    $('#newdb').value = ''; toast(`Created "${name}". Add players to it here.`);
+    await enterLeague(name); showTab('admin');
+  } catch (e) { m.textContent = friendly(e); }
+  $('#newdbbtn').disabled = false;
+}
+async function renamePlayer(from) {
+  const to = clean(prompt(`New name for "${from}" (use their username so they can pick for it):`, from) || '');
+  if (!to || to === from) return;
+  try {
+    const j = await api('/api/admin-rename', {idToken: await idToken(), league, from, to});
+    toast(`Renamed to ${to}${j.moved ? ` (${j.moved} picks moved)` : ''}`);
+    await pull(); renderAdmin();
+  } catch (e) { toast(e.message); }
 }
 
 // ---------------------------------------------------------------- administrator: email & notification settings
@@ -1196,7 +1272,7 @@ async function saveNotify() {
   next.note = $('#ns-note').value.trim().slice(0, 400);
   next.leads = [...$('#ns-leads').querySelectorAll('.on')].map(b => b.dataset.lead).join(',');
   $('#ns-save').disabled = true; m.textContent = 'Saving…';
-  try { await dbCall('PUT', cfg.url + '/settings/notify', next); ns = next; renderNotify(); m.classList.add('ok'); m.textContent = 'Saved. Changes apply within 15 minutes.'; }
+  try { await dbCall('PUT', cfg.url + '/settings/notify', next); ns = next; renderNotify(); m.classList.add('ok'); m.textContent = 'Saved. Changes apply within 15 minutes.'; adminLog('Changed the email & notification settings'); }
   catch (e) { m.textContent = friendly(e); }
   $('#ns-save').disabled = false;
 }
@@ -1215,10 +1291,11 @@ async function sendReminderNow() {
 /** Administrator page: the players on this database. */
 function renderAdmin() {
   if (!isAdmin()) return;
-  $('#nulg').textContent = league; $('#nulg2').textContent = league;
+  $('#nulg').textContent = league; $('#nulg2').textContent = league; $('#dbcur').textContent = league;
   $('#plist').innerHTML = profiles.length ? profiles.map((p, i) =>
     `<li style="animation-delay:${i * 30}ms"><span class="av">${esc(p.charAt(0).toUpperCase())}</span><span class="nm">${esc(p)}${mine(p) ? ' <span class="you">(you)</span>' : ''}</span>` +
     (/^[a-z0-9_-]+$/.test(p.toLowerCase()) && !mine(p) ? `<button type="button" class="x key" data-pw="${esc(p)}" aria-label="Reset password for ${esc(p)}" title="Reset password">&#128273;</button>` : '') +
+    `<button type="button" class="x key" data-rn="${esc(p)}" aria-label="Rename ${esc(p)}" title="Rename">&#9998;</button>` +
     `<button type="button" class="x" data-del="${esc(p)}" aria-label="Remove ${esc(p)}">&times;</button></li>`).join('')
     : '<li style="color:var(--muted)">No players yet.</li>';
   renderEmails();
@@ -1238,7 +1315,17 @@ function teamBtn(g, side) {
     (t.rec ? `<span class="rec">${esc(t.rec)}</span>` : '') + miniStats(g, t) +
     `<span class="tag">${tag}</span></button>`;
 }
+/** After kickoff: how the league picked this game, e.g. 3 of 4 picked KC. */
+function leaguePicks(g) {
+  if (g.state === 'pre' && !(Date.parse(g.date) <= Date.now())) return null;
+  const all = profiles.map(p => picks[pk(p, g.id)]).filter(Boolean);
+  if (!all.length) return null;
+  const n = ab => all.filter(x => x === ab).length;
+  return {total: all.length, away: n(g.away.abbr), home: n(g.home.abbr)};
+}
 function miniStats(g, t) {
+  const lp = leaguePicks(g);
+  if (lp) { const k = t === g.away ? lp.away : lp.home; return `<span class="mini lp">${Math.round(k / lp.total * 100)}% of picks<br>${k} of ${lp.total}</span>`; }
   const d = summaryOf(g), st = d && d.stats[t.abbr];
   if (!st || st.totalPointsPerGame === undefined) return '<span class="mini"></span>';
   return `<span class="mini">Scores ${esc(st.totalPointsPerGame)}<br>Allows ${esc(st.totalPointsPerGameAllowed)}</span>`;
@@ -1451,24 +1538,27 @@ function weekLabel(key) {
   return 'T' + type + 'W' + week;
 }
 const weekIsFinal = list => list.length > 0 && list.every(g => g.state === 'post');
+let standSeason = null;                              // season shown on Standings (null = the current one)
+const allSeasons = () => [...new Set(Object.keys(picks).map(k => +k.split('|')[1].split('-')[0]))].filter(Boolean).sort((a, b) => b - a);
 const seasonWeeks = () => [...new Set(Object.keys(picks).map(k => k.split('|')[1]))]
-  .filter(w => w.startsWith(season + '-')).sort((a, b) => weekOrder(a) - weekOrder(b));
+  .filter(w => w.startsWith((standSeason || season) + '-')).sort((a, b) => weekOrder(a) - weekOrder(b));
 let seasonBusy = false, lastSeason = 0;
 
 function renderStandings() {
   const weeks = seasonWeeks();
-  const st = profiles.map(p => ({p, c: 0, l: 0, d: 0, won: 0, by: []}));   // d: point differential of every decided pick
+  const st = profiles.map(p => ({p, c: 0, l: 0, d: 0, won: 0, by: [], perfect: 0, run: 0, best: 0}));   // d: point differential of every decided pick
+  const winners = [];
   let finals = 0;
   for (const key of weeks) {
     const list = key === wk() ? games : (LS('games.' + key) || []);
     const counts = st.map(s => {
       let c = 0;
-      for (const g of list) {
+      for (const g of [...list].sort(byDate)) {
         const pick = picks[`${s.p}|${key}|${g.id}`];
         if (!pick || g.state !== 'post') continue;
         const w = winner(g);
         if (w === 'TIE') continue;
-        if (pick === w) { c++; s.c++; } else s.l++;
+        if (pick === w) { c++; s.c++; s.run++; s.best = Math.max(s.best, s.run); } else { s.l++; s.run = 0; }
         const mineT = g.away.abbr === pick ? g.away : g.home.abbr === pick ? g.home : null;
         if (mineT) s.d += mineT.score - (mineT === g.away ? g.home : g.away).score;   // + by how much they won, - by how much they lost
       }
@@ -1477,8 +1567,11 @@ function renderStandings() {
     });
     if (weekIsFinal(list)) {
       finals++;
-      const best = Math.max(0, ...counts);
-      if (best > 0) st.forEach((s, i) => { if (counts[i] === best) s.won++; });
+      const best = Math.max(0, ...counts), decided = list.filter(g => winner(g) !== 'TIE').length;
+      if (best > 0) {
+        st.forEach((s, i) => { if (counts[i] === best) s.won++; if (counts[i] === decided && decided) s.perfect++; });
+        winners.push({key, names: st.filter((s, i) => counts[i] === best).map(s => s.p), best});
+      }
     }
   }
   // Ranked by 1. win percentage, 2. point differential, 3. total correct
@@ -1497,11 +1590,28 @@ function renderStandings() {
   });
   $('#sttable').innerHTML = '<tr><th>Player</th><th>Pct</th><th>+/\u2212</th><th>Correct</th><th>Wrong</th><th>Weeks Won</th>' +
     weeks.map(k => `<th>${esc(weekLabel(k))}</th>`).join('') + '</tr>' + rows.join('');
-  $('#sttitle').textContent = `${season} Season \u2014 ${finals} week${finals === 1 ? '' : 's'} complete`;
+  const shown = standSeason || season, seasons = allSeasons();
+  $('#sttitle').innerHTML = `${esc(shown)} Season \u2014 ${finals} week${finals === 1 ? '' : 's'} complete` +
+    (seasons.length > 1 ? ` <select id="stseason" aria-label="Season">${seasons.map(y => `<option value="${y}"${y === shown ? ' selected' : ''}>${y}</option>`).join('')}</select>` : '');
+  renderTrophies(st, winners, shown);
   renderMyStats(weeks);
   if (!seasonBusy) $('#stnote').textContent = weeks.length
     ? 'Ranked by Pct, then +/\u2212 (each pick adds the margin its team won by, or subtracts the margin it lost by), then total correct. Weekly columns show correct picks.'
     : 'Make some picks and the standings will build here.';
+}
+
+/** Trophy case: weekly wins, perfect weeks, the season's longest streak, the champion, and each week's winner. */
+function renderTrophies(st, winners, yr) {
+  const box = $('#trophies');
+  if (!winners.length) { box.innerHTML = ''; return; }
+  const streak = Math.max(0, ...st.map(s => s.best)), sb = LS(`games.${yr}-3-5`) || [];
+  const champ = weekIsFinal(sb) && st.length ? st[0].p : null;      // standings are already in rank order
+  const rows = st.filter(s => s.won || s.perfect || (streak && s.best === streak)).map(s => `<div class="tr"><b>${esc(s.p)}</b><span>` +
+    (s.p === champ ? '<i title="Season champion">&#128081; Champion</i>' : '') +
+    (s.won ? `<i title="Weeks won">&#127942; ${s.won}</i>` : '') + (s.perfect ? `<i title="Perfect weeks">&#128175; ${s.perfect}</i>` : '') +
+    (streak > 2 && s.best === streak ? `<i title="Longest streak of correct picks">&#128293; ${streak} in a row</i>` : '') + '</span></div>').join('');
+  box.innerHTML = `<div class="wzbox" style="margin:0 12px 12px"><h4>Trophy case</h4>${rows}` +
+    `<div class="wkw">${winners.slice().reverse().map(w => `<span>${esc(weekLabel(w.key))}: <b>${w.names.map(esc).join(', ')}</b> (${w.best})</span>`).join('')}</div></div>`;
 }
 
 /** "Your season": weekly correct picks as a bar chart, streaks, and the teams you pick best and worst. */
@@ -1601,7 +1711,7 @@ function showTab(t) {
   $('#weeknav').classList.toggle('collapsed', t === 'live' || t === 'admin' || t === 'prof');
   moveTabIndicator();
   if (t === 'stand') loadSeason(false);
-  if (t === 'admin') { renderAdmin(); loadEmails(); loadMailLog(); loadNotifySettings(); if (Date.now() - live.at > 60000) loadLive(); }
+  if (t === 'admin') { renderAdmin(); loadEmails(); loadMailLog(); loadNotifySettings(); loadActivity(); if (Date.now() - live.at > 60000) loadLive(); }
   if (t === 'live') { renderLive(); if (Date.now() - live.at > 15000) loadLive(); if (liveGame) loadGameSummary(liveGame); }
 }
 function moveTabIndicator() {
@@ -1652,6 +1762,7 @@ function liveRow(g, side) {
 function renderLive() {
   if (liveGame) { renderGame(); return; }
   const on = live.games.filter(g => g.state === 'in');
+  const finals = live.games.filter(g => g.state === 'post' && Date.now() - Date.parse(g.date) < 16 * 3600e3);
   let html;
   if (!live.at && !on.length) html = '<div class="lempty"><div class="wzwait loading">Loading live scores…</div></div>';
   else if (!on.length) {
@@ -1664,6 +1775,8 @@ function renderLive() {
       `<div class="lmeta"><span class="q">${esc(g.detail)}</span><span>${esc(g.sit.dd)}</span></div>` +
       (g.sit.last ? `<div class="lplay">${esc(g.sit.last)}</div>` : '') + pickChip(g) + '</button>').join('');
   }
+  if (finals.length) html += '<h4 class="lhead">Final today</h4>' + finals.map(g => `<button type="button" class="lcard fin" data-live="${esc(g.id)}">` +
+    liveRow(g, 'away') + liveRow(g, 'home') + `<div class="lmeta"><span class="f">${esc(g.detail || 'Final')}</span></div>` + pickChip(g) + '</button>').join('');
   $('#livebox').innerHTML = html;
 }
 function readGameSummary(j) {
@@ -1782,18 +1895,17 @@ function renderGame() {
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 /** True only when the database says this login has no email. Offline or older rules never block anyone. */
 async function emailMissing() {
-  if (!auth || LS('emailok.' + auth.user)) return false;
+  if (!auth || navigator.onLine === false) return false;      // offline: open straight away
   try {
-    const v = await dbCall('GET', cfg.url + '/emails/' + encodeURIComponent(auth.user));
-    if (v) { setLS('emailok.' + auth.user, true); return false; }
-    return true;
+    const v = await Promise.race([dbCall('GET', cfg.url + '/emails/' + encodeURIComponent(auth.user)),
+      new Promise((_, no) => setTimeout(() => no(new Error('slow')), 4000))]);   // a bad connection never blocks the app
+    return !v;
   } catch (e) { return false; }
 }
 async function saveOwnEmail(v) {
   v = v.trim();
   if (!EMAIL_RE.test(v)) throw new Error("That email address doesn't look right.");
   await dbCall('PUT', cfg.url + '/emails/' + encodeURIComponent(auth.user), v);
-  setLS('emailok.' + auth.user, true);
   if (emails && typeof emails === 'object') emails[auth.user] = v;
 }
 async function submitNeedEmail() {
@@ -1858,7 +1970,7 @@ async function subId(endpoint) {
 }
 async function currentSub() {
   if (!pushSupported()) return null;
-  const reg = await Promise.race([navigator.serviceWorker.ready, new Promise(r => setTimeout(() => r(null), 4000))]);
+  const reg = await Promise.race([navigator.serviceWorker.ready, new Promise(r => setTimeout(() => r(null), 1500))]);
   return reg ? reg.pushManager.getSubscription() : null;
 }
 async function renderPush() {
@@ -1915,15 +2027,22 @@ async function openProfile() {
   $('#dbsel').innerHTML = leagues.map(l => `<option${l === league ? ' selected' : ''}>${esc(l)}</option>`).join('');
   $('#pfdbbox').classList.toggle('hide', leagues.length < 2);
   ['#pfemailmsg', '#pfpassmsg'].forEach(k => { $(k).textContent = ''; $(k).classList.remove('ok'); });
-  ['#pfcur', '#pfnew', '#pfnew2'].forEach(k => { $(k).value = ''; });
+  ['#pfcur', '#pfnew', '#pfnew2', '#pfemailpw'].forEach(k => { $(k).value = ''; });
   showTab('prof');
   renderPush();
   try { $('#pfemail').value = (await dbCall('GET', cfg.url + '/emails/' + encodeURIComponent(auth.user))) || ''; } catch (e) { /* offline */ }
 }
 async function saveProfileEmail() {
-  const m = $('#pfemailmsg'); m.classList.remove('ok'); m.textContent = '';
-  try { await saveOwnEmail($('#pfemail').value); m.classList.add('ok'); m.textContent = 'Email saved.'; }
-  catch (e) { m.textContent = e.status ? friendly(e) : e.message; }
+  const m = $('#pfemailmsg'), pw = $('#pfemailpw').value; m.classList.remove('ok'); m.textContent = '';
+  if (!pw) { m.textContent = 'Enter your current password to change your email.'; $('#pfemailpw').focus(); return; }
+  $('#pfemailbtn').disabled = true;
+  try {
+    try { await signIn(auth.user, pw); }                 // proves it's you (and refreshes this device's login)
+    catch (e) { throw new Error(/INVALID_LOGIN_CREDENTIALS|INVALID_PASSWORD/.test(e.message) ? 'Your current password is wrong.' : friendly(e)); }
+    await saveOwnEmail($('#pfemail').value);
+    $('#pfemailpw').value = ''; m.classList.add('ok'); m.textContent = 'Email saved.';
+  } catch (e) { m.textContent = e.status ? friendly(e) : e.message; }
+  $('#pfemailbtn').disabled = false;
 }
 async function changePassword() {
   const m = $('#pfpassmsg'), cur = $('#pfcur').value, nw = $('#pfnew').value;
@@ -1985,6 +2104,8 @@ $('#elist').addEventListener('change', e => { const i = e.target.closest('[data-
 $('#elist').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('[data-email]')) e.target.blur(); });
 $('#testmail').onclick = sendTestEmail;
 $('#ns-save').onclick = saveNotify;
+$('#newdbbtn').onclick = createDatabase;
+$('#newdb').addEventListener('keydown', e => { if (e.key === 'Enter') createDatabase(); });
 $('#ns-now').onclick = sendReminderNow;
 $('#ns-leads').addEventListener('click', e => {
   const b = e.target.closest('[data-lead]'); if (!b) return;
@@ -1993,6 +2114,7 @@ $('#ns-leads').addEventListener('click', e => {
 });
 $('#plist').addEventListener('click', e => {
   const k = e.target.closest('[data-pw]'); if (k) { adminResetPassword(k.dataset.pw); return; }
+  const rn = e.target.closest('[data-rn]'); if (rn) { renamePlayer(rn.dataset.rn); return; }
   const b = e.target.closest('[data-del]'); if (b) deleteProfile(b.dataset.del);
 });
 $('#forgotbtn').onclick = () => { const f = $('#forgot'); f.classList.toggle('hide'); if (!f.classList.contains('hide')) { $('#fguser').value = $('#lguser').value; $('#fguser').focus(); } };
@@ -2007,6 +2129,11 @@ $('#refresh').onclick = () => {
 $('#t-picks').onclick = () => { resetWizard(); animateList = true; renderPicks(); showTab('picks'); };
 $('#t-score').onclick = () => showTab('score');
 $('#t-stand').onclick = () => showTab('stand');
+$('#sttitle').addEventListener('change', e => {
+  if (e.target.id !== 'stseason') return;
+  standSeason = +e.target.value === season ? null : +e.target.value; lastSeason = 0;
+  renderStandings(); loadSeason(true);
+});
 $('#lgbtn').onclick = doLogin;
 $('#lgpass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 $('#acctbtn').onclick = () => { if (!$('#prof').classList.contains('hide')) showTab(lastTab); else openProfile(); };
@@ -2046,7 +2173,8 @@ setInterval(() => {
 setInterval(() => {                                   // live scores: every 20 seconds on the Live tab, every 2 minutes otherwise
   if (document.hidden || !active()) return;
   const onLive = !$('#live').classList.contains('hide');
-  if (Date.now() - live.at > (onLive ? 18000 : 115000)) loadLive();
+  const gameDay = live.games.some(g => g.state === 'in' || (g.state === 'pre' && Math.abs(Date.parse(g.date) - Date.now()) < 3 * 3600e3));
+  if (Date.now() - live.at > (onLive ? 18000 : gameDay ? 28000 : 115000)) loadLive();
   if (onLive && liveGame) { const s = gameSums[liveGame]; if (!s || Date.now() - s.t > 18000) loadGameSummary(liveGame); }
 }, 5000);
 

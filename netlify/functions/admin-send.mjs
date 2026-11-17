@@ -1,5 +1,5 @@
 // POST /api/admin-send {"idToken": "..."}: the Admin tab's "Send a reminder now".
-import {ADMIN, DOMAIN, whoIs, missingSettings, remindNow} from './lib/pickem.mjs';
+import {ADMIN, DOMAIN, whoIs, missingSettings, remindNow, signInMailer, database, logEvent} from './lib/pickem.mjs';
 
 const reply = (body, status = 200) => new Response(JSON.stringify(body), {status, headers: {'content-type': 'application/json'}});
 
@@ -10,7 +10,11 @@ export default async req => {
   try { who = idToken ? await whoIs(idToken) : ''; } catch (e) { /* invalid */ }
   if (who !== ADMIN + DOMAIN) return reply({error: 'Only the administrator can do this.'}, 403);
   if (missingSettings().length) return reply({error: 'Netlify is missing: ' + missingSettings().join(', ')}, 503);
-  try { return reply({ok: true, ...(await remindNow())}); }
+  try {
+    const r = await remindNow();
+    await logEvent(database(await signInMailer()), ADMIN, `Sent a reminder now (${r.emails} emails, ${r.phones} notifications)`);
+    return reply({ok: true, ...r});
+  }
   catch (e) { return reply({error: e.message}, 500); }
 };
 

@@ -232,6 +232,26 @@ function remindEmail(d, r, w, slot, t) {
   return {subject, title: `Don't forget your ${w.label} picks`, lines};
 }
 
+/** Once a day: removes records nobody needs any more, so the database doesn't grow forever. */
+async function tidyUp(q, kick, t, log) {
+  const last = await q('GET', '/mail/cleaned').catch(() => null);
+  if (last && t - last < 86400e3) return;
+  try {
+    const old = t - 60 * 86400e3;
+    for (const [key, games] of Object.entries(kick || {})) {
+      const times = Object.values(games || {}).filter(x => typeof x === 'number');
+      if (times.length && Math.max(...times) < old) {
+        for (const path of [`/kickoffs/${key}`, `/mail/sent/${key}`, `/mail/final/${key}`]) await q('DELETE', path).catch(() => {});
+      }
+    }
+    for (const [h, r] of Object.entries((await q('GET', '/resets')) || {})) if (!r || !(r.exp > t)) await q('DELETE', `/resets/${h}`);
+    for (const [u, ts] of Object.entries((await q('GET', '/resetlog')) || {})) if (t - ts > 86400e3) await q('DELETE', `/resetlog/${u}`);
+    for (const [id, e] of Object.entries((await q('GET', '/log')) || {})) if (!e || t - e.t > 180 * 86400e3) await q('DELETE', `/log/${id}`);
+    await q('PUT', '/mail/cleaned', t);
+    log('old records tidied up');
+  } catch (e) { log('could not tidy up old records: ' + e.message); }
+}
+
 /** Loads everything a run needs. */
 async function loadState(q) {
   const [access, emails, leagues, sent, kick, subs, settings, final] = await Promise.all(
@@ -260,6 +280,7 @@ export async function runOnce({transport = mailer(), log = console.log} = {}) {
       catch (e) { log(`could not save kickoff times for ${w.label}: ${e.message}`); }
     }
   }
+  await tidyUp(q, kick, t, log);
   if (s.paused) { log('emails and notifications are paused (Admin tab)'); return 0; }
 
   // Games for any week, for season standings (fetched once per run)
@@ -375,4 +396,9 @@ export async function remindNow({transport = mailer(), log = console.log} = {}) 
     pushes += await pushTo(q, keys, p.user, p.subs, {title: `⏰ ${w.label} picks`, body: `You still have ${missing} game${missing === 1 ? '' : 's'} to pick. Next kickoff ${et(slot.first)}.`, url: appUrl()}, log);
   }
   return {emails, phones: pushes, week: w.label};
+}
+
+/** Adds a line to the administrator's activity log (Admin tab). Never throws. */
+export async function logEvent(q, who, what) {
+  try { await q('POST', '/log', {t: Date.now(), who: String(who).slice(0, 40), what: String(what).slice(0, 300)}); } catch (e) { /* the log is best effort */ }
 }

@@ -1,7 +1,7 @@
 // POST /api/reset {"token": "...", "password": "..."}: sets a new password using a link from
 // /api/reset-request. Each link works once, for one hour.
 import crypto from 'node:crypto';
-import {signInMailer, database} from './lib/pickem.mjs';
+import {signInMailer, database, logEvent} from './lib/pickem.mjs';
 import {adminReady, setPassword} from './lib/admin.mjs';
 
 const reply = (body, status = 200) => new Response(JSON.stringify(body), {status, headers: {'content-type': 'application/json'}});
@@ -18,6 +18,7 @@ export default async req => {
   await q('DELETE', `/resets/${hash}`);
   try { await setPassword(rec.user, String(password)); }
   catch (e) { return reply({error: /NO_SUCH_USER/.test(e.message) ? 'That account no longer exists.' : 'Could not change the password: ' + e.message}, 500); }
+  await logEvent(q, rec.user, `${rec.user} reset their password with an email link`);
   return reply({ok: true, user: rec.user});
 };
 
