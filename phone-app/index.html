@@ -476,6 +476,13 @@ dialog p b{color:var(--text)}
           <button class="btn full" id="pfpassbtn" type="button" style="width:100%;margin-top:14px">Change password</button>
           <div class="err" id="pfpassmsg"></div>
         </div>
+        <div class="wzbox pfform" id="pfpush">
+          <h3 style="margin:0">Notifications</h3>
+          <p class="muted" id="pushnote" style="margin:4px 0 0"></p>
+          <button class="btn full" id="pushbtn" type="button" style="width:100%;margin-top:12px">Turn on notifications</button>
+          <button class="btn alt full hide" id="pushtest" type="button" style="width:100%;margin-top:8px">Send me a test notification</button>
+          <div class="err" id="pushmsg"></div>
+        </div>
         <button class="btn alt" id="acctlogout" type="button" style="width:100%;margin-top:12px">Log out</button>
       </div>
     </section>
@@ -717,13 +724,15 @@ function showScreen(s) {
 }
 /** The database URL and API key come from config.js, else from the site's Netlify settings (/api/config),
  *  else from the last copy saved on this device. */
+let vapidKey = LS('vapid') || '';                   // public key for phone notifications (from /api/config)
 async function ensureConfig() {
-  if (CFG0.databaseUrl && CFG0.apiKey) return true;
+  if (CFG0.databaseUrl && CFG0.apiKey && vapidKey) return true;
   try {
     const r = await fetch('/api/config', {cache: 'no-store'});
     if (r.ok) {
       const j = await r.json();
       if (j.databaseUrl && j.apiKey) { cfg = {url: String(j.databaseUrl).trim().replace(/\/+$/, ''), key: String(j.apiKey).trim()}; setLS('cfg', cfg); }
+      if (j.vapidPublicKey) { vapidKey = j.vapidPublicKey; setLS('vapid', vapidKey); }
     }
   } catch (e) { /* offline: use the saved copy */ }
   return !!(cfg.url && cfg.key);
@@ -1716,6 +1725,69 @@ async function adminResetPassword(name) {
   catch (e) { toast(e.message); }
 }
 
+// ---------------------------------------------------------------- phone notifications
+const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const onIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const fromHomeScreen = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+function urlKey(b64) {
+  const p = '='.repeat((4 - b64.length % 4) % 4), raw = atob((b64 + p).replace(/-/g, '+').replace(/_/g, '/'));
+  return Uint8Array.from(raw, c => c.charCodeAt(0));
+}
+async function subId(endpoint) {
+  const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(endpoint));
+  return [...new Uint8Array(h)].slice(0, 10).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+async function currentSub() {
+  if (!pushSupported()) return null;
+  const reg = await Promise.race([navigator.serviceWorker.ready, new Promise(r => setTimeout(() => r(null), 4000))]);
+  return reg ? reg.pushManager.getSubscription() : null;
+}
+async function renderPush() {
+  const note = $('#pushnote'), btn = $('#pushbtn'), test = $('#pushtest');
+  btn.classList.remove('hide'); test.classList.add('hide'); btn.disabled = false;
+  if (!pushSupported()) {
+    note.textContent = onIOS && !fromHomeScreen()
+      ? "On iPhone, notifications only work in the Home Screen app: tap Share, then Add to Home Screen, and open Pick'Em from there."
+      : "This browser can't show notifications.";
+    btn.classList.add('hide'); return;
+  }
+  if (!vapidKey) { note.textContent = "Notifications aren't set up on the server yet."; btn.classList.add('hide'); return; }
+  if (Notification.permission === 'denied') { note.textContent = 'Notifications are blocked for this app. Turn them on in your phone\'s Settings, then come back here.'; btn.classList.add('hide'); return; }
+  const sub = await currentSub();
+  note.textContent = sub ? 'On for this device: pick reminders 2 hours before kickoff, and the result of each game you pick.'
+    : 'Get a reminder 2 hours before kickoff if you have picks to make, and the result of each game you pick.';
+  btn.textContent = sub ? 'Turn off notifications' : 'Turn on notifications';
+  btn.classList.toggle('alt', !!sub);
+  test.classList.toggle('hide', !sub);
+}
+async function togglePush() {
+  const m = $('#pushmsg'); m.classList.remove('ok'); m.textContent = '';
+  $('#pushbtn').disabled = true;
+  try {
+    const sub = await currentSub();
+    if (sub) {
+      const id = await subId(sub.endpoint);
+      await sub.unsubscribe();
+      await dbCall('DELETE', cfg.url + `/push/${encodeURIComponent(auth.user)}/${id}`).catch(() => {});
+      m.classList.add('ok'); m.textContent = 'Notifications are off for this device.';
+    } else {
+      if (await Notification.requestPermission() !== 'granted') throw new Error('Notifications were not allowed.');
+      const reg = await navigator.serviceWorker.ready;
+      const s2 = await reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: urlKey(vapidKey)});
+      const j = s2.toJSON();
+      await dbCall('PUT', cfg.url + `/push/${encodeURIComponent(auth.user)}/${await subId(j.endpoint)}`,
+        {endpoint: j.endpoint, keys: {p256dh: j.keys.p256dh, auth: j.keys.auth}, at: Date.now()});
+      m.classList.add('ok'); m.textContent = 'Notifications are on.';
+    }
+  } catch (e) { m.textContent = e.status ? friendly(e) : e.message; }
+  await renderPush();
+}
+async function testPush() {
+  const m = $('#pushmsg'); m.classList.remove('ok'); m.textContent = 'Sending…';
+  try { await api('/api/test-push', {idToken: await idToken()}); m.classList.add('ok'); m.textContent = 'Sent. It should appear in a few seconds.'; }
+  catch (e) { m.textContent = e.message; }
+}
+
 let lastTab = 'picks';
 async function openProfile() {
   const me = myProfile() || (auth ? auth.user : '');
@@ -1726,6 +1798,7 @@ async function openProfile() {
   ['#pfemailmsg', '#pfpassmsg'].forEach(k => { $(k).textContent = ''; $(k).classList.remove('ok'); });
   ['#pfcur', '#pfnew', '#pfnew2'].forEach(k => { $(k).value = ''; });
   showTab('prof');
+  renderPush();
   try { $('#pfemail').value = (await dbCall('GET', cfg.url + '/emails/' + encodeURIComponent(auth.user))) || ''; } catch (e) { /* offline */ }
 }
 async function saveProfileEmail() {
@@ -1825,6 +1898,8 @@ $('#livebox').addEventListener('click', e => {
 $('#pfemailbtn').onclick = saveProfileEmail;
 $('#pfemail').addEventListener('keydown', e => { if (e.key === 'Enter') saveProfileEmail(); });
 $('#pfpassbtn').onclick = changePassword;
+$('#pushbtn').onclick = togglePush;
+$('#pushtest').onclick = testPush;
 $('#nebtn').onclick = submitNeedEmail;
 $('#neemail').addEventListener('keydown', e => { if (e.key === 'Enter') submitNeedEmail(); });
 $('#nelogout').onclick = () => { clearLocalData(); logout(''); };
@@ -1855,7 +1930,7 @@ setInterval(() => {                                   // live scores: every 20 s
   pruneSummaries();
   fillLoginFields();
   if (resetToken) { showScreen('resetpw'); ensureConfig(); return; }   // opened from a password reset email
-  await ensureConfig();
+  if (cfg.url && cfg.key) ensureConfig(); else await ensureConfig();  // with settings saved, refresh them in the background
   if (auth && auth.refresh && cfg.url && cfg.key) {
     try { leagues = await fetchLeagues(); setLS('leagues', leagues); }
     catch (e) {

@@ -82,3 +82,15 @@ Both need administrator access to Firebase Authentication:
 
 Keep that file private: anyone who has it can manage your Firebase project. Delete the download once
 it's in Netlify.
+
+## Phone notifications
+
+Each player turns them on from their **Profile** page. On iPhone, notifications only work when Pick'Em
+is opened from the Home Screen (Share > Add to Home Screen). Players get:
+
+- a reminder 2 hours before a week's first kickoff, if they still have picks to make, and
+- the result of each game they picked, once it's final.
+
+The scheduled job sends them. Its push keys are created automatically on the first run and stored
+under `/vapid` (readable only by the mailer login), so there's nothing extra to set up beyond the
+email settings above and publishing the current `database.rules.json`.

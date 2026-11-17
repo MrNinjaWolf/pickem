@@ -3,6 +3,7 @@
   "type": "module",
   "description": "Only used by the Netlify functions that send reminder emails. The web app itself has no build step.",
   "dependencies": {
-    "nodemailer": "7.0.13"
+    "nodemailer": "7.0.13",
+    "web-push": "3.6.7"
   }
 }

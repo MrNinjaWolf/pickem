@@ -8,6 +8,7 @@
 //   GMAIL_USER              the Gmail address emails are sent from
 //   GMAIL_APP_PASSWORD      a Gmail app password for that address
 import nodemailer from 'nodemailer';
+import {vapidKeys, pushTo} from './push.mjs';
 
 const E = k => (process.env[k] || '').trim();
 export const DOMAIN = '@pickem.app', ADMIN = 'dakota', MAILER = 'mailer';
@@ -114,15 +115,18 @@ export async function send(transport, to, subject, title, lines) {
 
 // ---------------------------------------------------------------- what to send
 /** Each login with an email, and the databases where it has access and a name on the player list. */
+function leaguesOf(d, user) {
+  const tagged = ((d.access[user] || {}).leagues) || {};
+  return Object.keys(tagged).filter(lg => tagged[lg] === true && d.leagues[lg]).map(lg => {
+    const name = Object.keys(d.leagues[lg].profiles || {}).find(n => n.toLowerCase() === user);
+    return name && {lg, name};
+  }).filter(Boolean);
+}
 function recipients(d) {
   const out = [];
   for (const [user, email] of Object.entries(d.emails || {})) {
     if (typeof email !== 'string' || !email.includes('@')) continue;
-    const tagged = ((d.access[user] || {}).leagues) || {};
-    const leagues = Object.keys(tagged).filter(lg => tagged[lg] === true && d.leagues[lg]).map(lg => {
-      const name = Object.keys(d.leagues[lg].profiles || {}).find(n => n.toLowerCase() === user);
-      return name && {lg, name};
-    }).filter(Boolean);
+    const leagues = leaguesOf(d, user);
     if (leagues.length) out.push({user, email, leagues});
   }
   return out;
@@ -188,7 +192,7 @@ function remindEmail(d, r, w, first) {
 export async function runOnce({transport = mailer(), log = console.log} = {}) {
   const q = database(await signInMailer());
   const weeks = await nearbyWeeks();
-  const [access, emails, leagues, sent, kick] = await Promise.all(['/access', '/emails', '/leagues', '/mail/sent', '/kickoffs'].map(p => q('GET', p)));
+  const [access, emails, leagues, sent, kick, subs] = await Promise.all(['/access', '/emails', '/leagues', '/mail/sent', '/kickoffs', '/push'].map(p => q('GET', p)));
   const d = {access: access || {}, emails: emails || {}, leagues: leagues || {}, sent: sent || {}};
   const people = recipients(d), t = now();
   let count = 0;
@@ -237,6 +241,43 @@ export async function runOnce({transport = mailer(), log = console.log} = {}) {
           await q('PUT', `/mail/sent/${w.key}/${kind}/${r.user}`, t);
           count++; log(`sent ${kind} for ${w.label} to ${r.user}`);
         } catch (e) { log(`could not send ${kind} for ${w.label} to ${r.user}: ${e.message}`); }
+      }
+    }
+  }
+
+  // ---------------- phone notifications: the 2-hour reminder, and the result of each game you picked
+  const keys = await vapidKeys(q, {create: true});              // created once, so phones can subscribe
+  const phones = Object.entries(subs || {}).filter(([, s]) => s && Object.keys(s).length)
+    .map(([user, s]) => ({user, subs: s, leagues: leaguesOf(d, user)})).filter(p => p.leagues.length);
+  if (keys && phones.length) {
+    const mark = async (key, kind, user) => q('PUT', `/mail/sent/${key}/${kind}/${user}`, t);
+    const was = (key, kind, user) => !!(((d.sent[key] || {})[kind] || {})[user]);
+    for (const w of weeks) {
+      if (!w.games.length) continue;
+      const first = Math.min(...w.games.map(g => Date.parse(g.date)).filter(x => !isNaN(x)));
+      if (t >= first - 2 * 3600e3 && t < first) {
+        const open = w.games.filter(g => g.state === 'pre' && Date.parse(g.date) > t);
+        for (const p of phones) {
+          if (was(w.key, 'pushremind', p.user)) continue;
+          const missing = Math.max(...p.leagues.map(({lg, name}) => { const pk = picksOf(d, lg, w.key, name); return open.filter(g => !pk[g.id]).length; }));
+          if (!missing) continue;
+          const n = await pushTo(q, keys, p.user, p.subs, {title: `\u23F0 ${w.label} picks lock soon`,
+            body: `You still have ${missing} game${missing === 1 ? '' : 's'} to pick. The first kickoff is ${et(first)}.`, url: appUrl()}, log);
+          if (n) { await mark(w.key, 'pushremind', p.user); count += n; log(`notified ${p.user}: ${w.label} reminder`); }
+        }
+      }
+      for (const g of w.games) {
+        if (g.state !== 'post' || t - Date.parse(g.date) > 12 * 3600e3) continue;   // games that finished recently
+        const win = winner(g), kind = 'g' + g.id;
+        for (const p of phones) {
+          if (was(w.key, kind, p.user)) continue;
+          const pick = p.leagues.map(({lg, name}) => picksOf(d, lg, w.key, name)[g.id]).find(Boolean);
+          if (!pick) continue;
+          const right = pick === win, score = `${g.away.abbr} ${g.away.score} \u2013 ${g.home.score} ${g.home.abbr}`;
+          const title = win === 'TIE' ? `${score}: a tie` : right ? `\u2705 Your pick ${pick} won` : `\u274C Your pick ${pick} lost`;
+          const n = await pushTo(q, keys, p.user, p.subs, {title, body: `Final: ${score}`, url: appUrl()}, log);
+          if (n) { await mark(w.key, kind, p.user); count += n; log(`notified ${p.user}: result of ${score}`); }
+        }
       }
     }
   }

@@ -57,7 +57,7 @@
           "$kind": {
             "$user": {
               ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
-              ".validate": "newData.isNumber() && ($kind === 'done' || $kind === 'remind')"
+              ".validate": "newData.isNumber() && ($kind === 'done' || $kind === 'remind' || $kind === 'pushremind' || $kind.matches(/^g[0-9]+$/))"
             }
           }
         }
@@ -84,6 +84,20 @@
         ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
         ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
         ".validate": "newData.isNumber()"
+      }
+    },
+    "vapid": {
+      ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
+      ".write": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app') && !data.exists()"
+    },
+    "push": {
+      ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
+      "$user": {
+        ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app') && auth.token.email.toLowerCase().replace('@pickem.app', '') === $user",
+        "$sub": {
+          ".write": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app') && auth.token.email.toLowerCase().replace('@pickem.app', '') === $user) || ((auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app') && !newData.exists())",
+          ".validate": "newData.child('endpoint').isString() && newData.child('endpoint').val().beginsWith('https://') && newData.child('keys').child('p256dh').isString() && newData.child('keys').child('auth').isString()"
+        }
       }
     }
   }
