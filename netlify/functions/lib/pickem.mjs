@@ -241,7 +241,8 @@ async function tidyUp(q, kick, t, log) {
     for (const [key, games] of Object.entries(kick || {})) {
       const times = Object.values(games || {}).filter(x => typeof x === 'number');
       if (times.length && Math.max(...times) < old) {
-        for (const path of [`/kickoffs/${key}`, `/mail/sent/${key}`, `/mail/final/${key}`]) await q('DELETE', path).catch(() => {});
+        // Kickoff times are kept: the database rules use them to keep old picks locked.
+        for (const path of [`/mail/sent/${key}`, `/mail/final/${key}`]) await q('DELETE', path).catch(() => {});
       }
     }
     for (const [h, r] of Object.entries((await q('GET', '/resets')) || {})) if (!r || !(r.exp > t)) await q('DELETE', `/resets/${h}`);

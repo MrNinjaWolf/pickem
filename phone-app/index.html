@@ -1612,6 +1612,7 @@ function renderStandings() {
   $('#sttable').innerHTML = '<tr><th>Player</th><th>Pct</th><th>+/\u2212</th><th>Correct</th><th>Wrong</th><th>Weeks Won</th>' +
     weeks.map(k => `<th>${esc(weekLabel(k))}</th>`).join('') + '</tr>' + rows.join('');
   const shown = standSeason || season, seasons = allSeasons();
+  if (document.activeElement && document.activeElement.id === 'stseason') { /* being chosen: don't rebuild it */ } else
   $('#sttitle').innerHTML = `${esc(shown)} Season \u2014 ${finals} week${finals === 1 ? '' : 's'} complete` +
     (seasons.length > 1 ? ` <select id="stseason" aria-label="Season">${seasons.map(y => `<option value="${y}"${y === shown ? ' selected' : ''}>${y}</option>`).join('')}</select>` : '');
   renderTrophies(st, winners, shown);
@@ -2153,6 +2154,7 @@ $('#t-score').onclick = () => showTab('score');
 $('#t-stand').onclick = () => showTab('stand');
 $('#sttitle').addEventListener('change', e => {
   if (e.target.id !== 'stseason') return;
+  e.target.blur();                                   // the choice is made: let the title rebuild
   standSeason = +e.target.value === season ? null : +e.target.value; lastSeason = 0;
   renderStandings(); loadSeason(true);
 });
