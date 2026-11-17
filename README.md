@@ -16,6 +16,12 @@ Logins and picks are stored in Firebase. Files outside `phone-app` never go on t
   administrator, edit `ADMIN` in `phone-app/index.html` and `netlify/functions/lib/pickem.mjs`,
   and the `dakota@pickem.app` entries in `database.rules.json`.
 
+## Server settings
+
+The app reads the Firebase database URL and Web API key from the Netlify environment variables
+`PICKEM_DB_URL` and `PICKEM_API_KEY` (through `/api/config`), so the login screen only asks for a
+username and password. `phone-app/config.js` can still hold them instead.
+
 ## Database rules
 
 `database.rules.json` must be pasted into Firebase by hand: **Build > Realtime Database > Rules**,
@@ -36,8 +42,9 @@ A scheduled Netlify function (`netlify/functions/pickem-mail.mjs`) runs every 15
 - a **results email** to every player with an email address once all of a week's games are final, and
 - a **reminder** 2 hours before the next week's first kickoff, only to players who still have picks to make.
 
-Each email goes to each person once. Emails are set on the Admin tab, and only `dakota` and the
-mailer login can read them.
+Each email goes to each person once. Players add their own email (they're asked for one at login if
+it's missing, and can change it on their Profile page), and the administrator can also set them on
+the Admin tab. Only the player, `dakota` and the mailer login can read an address.
 
 1. **Gmail app password.** In the Google account you want to send from, turn on 2-Step Verification,
    then open *Security > App passwords*, create one named "Pick'Em", and copy the 16 letters.

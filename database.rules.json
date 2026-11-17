@@ -45,7 +45,8 @@
     "emails": {
       ".read": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app') || (auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app')",
       "$user": {
-        ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app'",
+        ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app') && auth.token.email.toLowerCase().replace('@pickem.app', '') === $user",
+        ".write": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app') || (auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app') && auth.token.email.toLowerCase().replace('@pickem.app', '') === $user)",
         ".validate": "newData.isString() && newData.val().length <= 254 && newData.val().matches(/^[^@ ]+@[^@ ]+[.][^@ ]+$/) && $user.matches(/^[a-z0-9_-]+$/)"
       }
     },
