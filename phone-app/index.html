@@ -16,7 +16,7 @@
 :root{
   --bg:#050b17;--bg2:#0a1630;--surface:rgba(255,255,255,.045);--surface2:rgba(255,255,255,.08);--surface3:rgba(255,255,255,.12);
   --line:rgba(255,255,255,.09);--text:#f3f6fb;--muted:#8a9bb8;--gold:#ffc53d;--red:#ef4444;--red2:#b91c1c;--green:#34d399;--bad:#f87171;
-  --radius:18px;--ease:cubic-bezier(.2,.8,.2,1);--spring:cubic-bezier(.34,1.56,.64,1);--shadow:0 12px 32px rgba(0,0,0,.38);
+  --radius:18px;--ease:cubic-bezier(.2,.8,.2,1);--glide:cubic-bezier(.45,0,.2,1);--spring:cubic-bezier(.34,1.56,.64,1);--shadow:0 12px 32px rgba(0,0,0,.38);
   --navy:var(--bg);--panel:var(--surface);--card:var(--surface2);--edge:var(--line)
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -54,13 +54,20 @@ img{user-select:none;-webkit-user-drag:none}
 .tabs{position:relative;display:grid;grid-template-columns:repeat(var(--n,3),1fr);margin-top:10px;padding:4px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
 .tabs button{position:relative;z-index:1;padding:9px 4px;border:0;background:none;color:var(--muted);font-weight:700;font-size:14px;border-radius:10px;transition:color .25s}
 .tabs button.on{color:#fff}
-.tabind{position:absolute;z-index:0;top:4px;bottom:4px;left:4px;width:calc((100% - 8px) / var(--n,3));border-radius:10px;background:linear-gradient(135deg,rgba(239,68,68,.95),rgba(185,28,28,.95));box-shadow:0 6px 16px rgba(239,68,68,.3);transition:transform .38s var(--spring)}
+.tabind{position:absolute;z-index:0;top:4px;bottom:4px;left:4px;width:calc((100% - 8px) / var(--n,3));border-radius:10px;background:linear-gradient(135deg,rgba(239,68,68,.95),rgba(185,28,28,.95));box-shadow:0 6px 16px rgba(239,68,68,.3);transition:transform .5s var(--glide),width .5s var(--glide),opacity .3s;will-change:transform}
 .statusrow{display:flex;justify-content:space-between;align-items:center;gap:8px;max-width:760px;margin:0 auto;padding:10px 16px 0;font-size:12px;color:var(--muted)}
 .linkbtn{border:0;background:none;color:var(--muted);font-weight:700;font-size:12px;padding:4px 2px;transition:color .2s}
 .linkbtn:active{color:#fff}
 .linkbtn.spin .ic{display:inline-block;animation:spin .7s linear infinite}
 main{max-width:760px;margin:0 auto}
 .view{animation:viewIn .35s var(--ease)}
+.view.from-r{animation:slideFromR .45s var(--glide) both}
+.view.from-l{animation:slideFromL .45s var(--glide) both}
+main{overflow-x:clip}
+.weeknav{max-height:64px;transition:max-height .45s var(--glide),opacity .3s var(--glide),visibility 0s}
+.weeknav.collapsed{max-height:0;opacity:0;visibility:hidden;pointer-events:none;transition:max-height .45s var(--glide),opacity .2s,visibility 0s .45s}
+.weeknav.collapsed + .tabs{margin-top:0}
+.tabs{transition:margin-top .45s var(--glide)}
 
 /* ---------- controls */
 input,select{font:inherit;font-size:16px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--text);padding:12px 14px;outline:none;transition:border-color .2s,background .2s}
@@ -334,6 +341,22 @@ dialog p b{color:var(--text)}
 .plist .x.key{background:rgba(255,197,61,.12);font-size:14px}
 .plist .x{border:0;background:rgba(248,113,113,.12);color:var(--bad);width:32px;height:32px;border-radius:10px;font-size:16px;flex:none}
 #admbox .btn.full{width:100%;margin-top:14px}
+.ns h4{margin:16px 0 6px;font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;text-align:left}
+.sw{display:flex;align-items:center;gap:12px;padding:8px 0;font-size:14px;cursor:pointer}
+.sw input{appearance:none;-webkit-appearance:none;flex:none;width:44px;height:26px;border-radius:999px;background:var(--surface3);position:relative;transition:background .25s var(--glide);padding:0;border:0;margin:0;cursor:pointer}
+.sw input::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.35);transition:transform .25s var(--glide)}
+.sw input:checked{background:var(--green)}
+.sw input:checked::after{transform:translateX(18px)}
+.sw.warn input:checked{background:var(--bad)}
+.row2{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:14px}
+.row2 span{flex:none;color:var(--muted)}
+.row2 select,.row2 input{flex:1;min-width:0;padding:9px 10px;font-size:14px}
+.col2{display:block;margin:8px 0;font-size:14px}
+.col2 span{display:block;color:var(--muted);margin-bottom:6px}
+.col2 textarea{width:100%;font:inherit;font-size:14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--text);padding:10px 12px;resize:vertical}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:7px 12px;font-size:13px;font-weight:700;transition:all .2s var(--glide)}
+.chips button.on{background:rgba(255,197,61,.16);border-color:rgba(255,197,61,.5);color:var(--gold)}
 #toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));transform:translate(-50%,24px) scale(.96);background:rgba(15,23,42,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);color:#fff;padding:11px 18px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .25s,transform .35s var(--spring);z-index:30;max-width:90vw;text-align:center;box-shadow:var(--shadow)}
 #toast.show{opacity:1;transform:translate(-50%,0) scale(1)}
 
@@ -342,6 +365,8 @@ dialog p b{color:var(--text)}
 @keyframes fade{from{opacity:0}to{opacity:1}}
 @keyframes viewIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes slideIn{from{opacity:0;transform:translateX(36px)}to{opacity:1;transform:none}}   /* sideways only, so the cards keep their height and place */
+@keyframes slideFromR{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+@keyframes slideFromL{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:none}}
 @keyframes fromR{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
 @keyframes fromL{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:none}}
 @keyframes pop{0%{transform:scale(.92)}60%{transform:scale(1.05)}100%{transform:scale(1)}}
@@ -374,10 +399,10 @@ dialog p b{color:var(--text)}
     </div>
     <div class="tabs" id="tabs" role="tablist">
       <span class="tabind" id="tabind"></span>
+      <button id="t-live" type="button">Live</button>
       <button id="t-picks" class="on" type="button">Picks</button>
       <button id="t-score" type="button">Scorecard</button>
       <button id="t-stand" type="button">Standings</button>
-      <button id="t-live" type="button">Live</button>
       <button id="t-admin" class="hide" type="button">Admin</button>
     </div>
   </div>
@@ -505,12 +530,40 @@ dialog p b{color:var(--text)}
           <div class="err" id="nuerr"></div>
         </div>
         <div class="wzbox">
-          <h3 style="margin:0">Email reminders</h3>
-          <p style="margin:4px 0 0;color:var(--muted);font-size:13px">Players with an email get a message when a week's games are all final, and a reminder 2 hours before the next week's first kickoff if they still have picks to make.</p>
+          <h3 style="margin:0">Player emails</h3>
+          <p style="margin:4px 0 0;color:var(--muted);font-size:13px">Where each player's results and reminders go. Players can also change their own on their Profile page.</p>
           <ul class="plist" id="elist"></ul>
           <button class="btn alt full" id="testmail" type="button">Send a test email to me</button>
           <div class="err" id="mailmsg"></div>
           <p id="maillast" style="margin:6px 0 0;color:var(--muted);font-size:12px"></p>
+        </div>
+        <div class="wzbox ns" id="nsbox">
+          <h3 style="margin:0">Emails &amp; notifications</h3>
+          <p class="muted" style="margin:4px 0 0">Changes apply within 15 minutes. No rebuild needed.</p>
+          <label class="sw warn"><input type="checkbox" id="ns-paused"><span>Pause all emails and notifications</span></label>
+          <h4>When a week is final</h4>
+          <label class="sw"><input type="checkbox" id="ns-resultsEmail"><span>Results email</span></label>
+          <label class="sw"><input type="checkbox" id="ns-resultsPush"><span>Results notification</span></label>
+          <label class="row2"><span>Send</span><select id="ns-delay">
+            <option value="0">as soon as the last game ends</option><option value="30">30 minutes after</option><option value="60">1 hour after</option>
+            <option value="120">2 hours after</option><option value="240">4 hours after</option><option value="480">8 hours after</option><option value="720">12 hours after</option>
+          </select></label>
+          <h4>Before kickoff</h4>
+          <label class="sw"><input type="checkbox" id="ns-remindEmail"><span>Reminder email (only to players missing picks)</span></label>
+          <label class="sw"><input type="checkbox" id="ns-remindPush"><span>Reminder notification (only to players missing picks)</span></label>
+          <div class="muted" style="margin:10px 0 6px">Remind this long before kickoff (pick up to 4):</div>
+          <div class="chips" id="ns-leads"></div>
+          <label class="sw"><input type="checkbox" id="ns-everyGameDay"><span>Before every game day (Thursday, Sunday, Monday&hellip;), not only the week's first game</span></label>
+          <h4>During games</h4>
+          <label class="sw"><input type="checkbox" id="ns-gamePush"><span>Notify players when each game they picked ends</span></label>
+          <h4>Email details</h4>
+          <label class="row2"><span>Sender name</span><input id="ns-fromName" type="text" maxlength="40"></label>
+          <label class="col2"><span>Note added to every email</span><textarea id="ns-note" maxlength="400" rows="3" placeholder="Optional, e.g. Pizza at Dakota's for the Super Bowl!"></textarea></label>
+          <button class="btn full" id="ns-save" type="button">Save settings</button>
+          <div class="err" id="ns-msg"></div>
+          <p class="muted" id="ns-next" style="margin:8px 0 0"></p>
+          <button class="btn alt full" id="ns-now" type="button">Send a reminder now</button>
+          <div class="err" id="ns-nowmsg"></div>
         </div>
       </div>
     </section>
@@ -1097,6 +1150,68 @@ async function sendTestEmail() {
   b.disabled = false;
 }
 
+// ---------------------------------------------------------------- administrator: email & notification settings
+const NS_DEFAULTS = {paused: false, resultsEmail: true, resultsPush: true, resultsDelayMin: 0, remindEmail: true, remindPush: true,
+  leads: '2', everyGameDay: false, gamePush: true, note: '', fromName: "NFL Pick'Em"};
+const LEAD_CHOICES = [48, 24, 12, 6, 4, 2, 1, 0.5];
+let ns = {...NS_DEFAULTS};
+const leadName = h => h >= 24 ? `${h / 24} day${h === 24 ? '' : 's'}` : h >= 1 ? `${h} hour${h === 1 ? '' : 's'}` : `${h * 60} min`;
+const leadSet = () => new Set(String(ns.leads).split(',').map(Number).filter(x => LEAD_CHOICES.includes(x)));
+async function loadNotifySettings() {
+  try { ns = {...NS_DEFAULTS, ...((await dbCall('GET', cfg.url + '/settings/notify')) || {})}; } catch (e) { ns = {...NS_DEFAULTS}; }
+  renderNotify();
+}
+function renderNotify() {
+  for (const k of ['paused', 'resultsEmail', 'resultsPush', 'remindEmail', 'remindPush', 'everyGameDay', 'gamePush']) $('#ns-' + k).checked = !!ns[k];
+  $('#ns-delay').value = String(ns.resultsDelayMin || 0);
+  $('#ns-fromName').value = ns.fromName || ''; $('#ns-note').value = ns.note || '';
+  const on = leadSet();
+  $('#ns-leads').innerHTML = LEAD_CHOICES.map(h => `<button type="button" data-lead="${h}" class="${on.has(h) ? 'on' : ''}">${leadName(h)}</button>`).join('');
+  $('#nsbox').style.opacity = ns.paused ? '.75' : '';
+  $('#ns-next').textContent = nextReminderText();
+}
+/** When the next reminder goes out, from the current week's schedule (Live tab data) and these settings. */
+function nextReminderText() {
+  if (ns.paused) return 'Paused: nothing will be sent.';
+  if (!ns.remindEmail && !ns.remindPush) return 'Reminders are off.';
+  const now = Date.now(), upcoming = live.games.filter(g => g.state === 'pre' && Date.parse(g.date) > now);
+  if (!upcoming.length) return "The next reminder will be scheduled once next week's games are listed.";
+  const firsts = [];
+  if (ns.everyGameDay) {
+    const by = {};
+    for (const g of live.games) { const k = new Date(g.date).toLocaleDateString('en-CA', {timeZone: 'America/New_York'}); by[k] = Math.min(by[k] || Infinity, Date.parse(g.date)); }
+    firsts.push(...Object.values(by));
+  } else firsts.push(Math.min(...live.games.map(g => Date.parse(g.date))));
+  let best = null;
+  for (const f of firsts) for (const L of leadSet()) { const at = f - L * 3600e3; if (f > now && at > now - 15 * 60000 && (!best || at < best.at)) best = {at, L}; }
+  if (!best) return 'No more reminders are due for the current games.';
+  return `Next reminder: ${new Date(Math.max(best.at, now)).toLocaleString([], {weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'})} (${leadName(best.L)} before kickoff).`;
+}
+async function saveNotify() {
+  const m = $('#ns-msg'); m.classList.remove('ok');
+  const next = {...ns};
+  for (const k of ['paused', 'resultsEmail', 'resultsPush', 'remindEmail', 'remindPush', 'everyGameDay', 'gamePush']) next[k] = $('#ns-' + k).checked;
+  next.resultsDelayMin = +$('#ns-delay').value || 0;
+  next.fromName = $('#ns-fromName').value.trim().replace(/["<>\\]/g, '').slice(0, 40) || NS_DEFAULTS.fromName;
+  next.note = $('#ns-note').value.trim().slice(0, 400);
+  next.leads = [...$('#ns-leads').querySelectorAll('.on')].map(b => b.dataset.lead).join(',');
+  $('#ns-save').disabled = true; m.textContent = 'Saving…';
+  try { await dbCall('PUT', cfg.url + '/settings/notify', next); ns = next; renderNotify(); m.classList.add('ok'); m.textContent = 'Saved. Changes apply within 15 minutes.'; }
+  catch (e) { m.textContent = friendly(e); }
+  $('#ns-save').disabled = false;
+}
+async function sendReminderNow() {
+  const m = $('#ns-nowmsg'); m.classList.remove('ok');
+  if (!confirm('Send a reminder now to everyone who still has picks to make?')) return;
+  $('#ns-now').disabled = true; m.textContent = 'Sending…';
+  try {
+    const j = await api('/api/admin-send', {idToken: await idToken()});
+    m.classList.add('ok');
+    m.textContent = j.week ? `Sent ${j.emails} email${j.emails === 1 ? '' : 's'} and ${j.phones} notification${j.phones === 1 ? '' : 's'} for ${j.week}.` : 'There are no upcoming games to remind anyone about.';
+  } catch (e) { m.textContent = e.message; }
+  $('#ns-now').disabled = false;
+}
+
 /** Administrator page: the players on this database. */
 function renderAdmin() {
   if (!isAdmin()) return;
@@ -1469,20 +1584,24 @@ async function loadSeason(force) {
   renderStandings();
 }
 
-const TABS = ['picks', 'score', 'stand', 'live', 'admin', 'prof'];
+const TABS = ['live', 'picks', 'score', 'stand', 'admin', 'prof'];   // tab bar order, left to right
 function showTab(t) {
   if (t === 'admin' && !isAdmin()) t = 'picks';
+  const from = TABS.findIndex(n => !$('#' + n).classList.contains('hide')), to = TABS.indexOf(t);
   for (const n of TABS) {
     const sec = $('#' + n), was = !sec.classList.contains('hide');
     sec.classList.toggle('hide', n !== t);
     if ($('#t-' + n)) $('#t-' + n).classList.toggle('on', n === t);
-    if (n === t && !was) { sec.classList.remove('view'); void sec.offsetWidth; sec.classList.add('view'); }
+    if (n === t && !was) {                            // slide in from the side you're moving toward
+      sec.classList.remove('view', 'from-r', 'from-l'); void sec.offsetWidth;
+      sec.classList.add('view', from < 0 || to === from ? 'view' : to > from ? 'from-r' : 'from-l');
+    }
   }
   if (t !== 'prof') lastTab = t;
-  $('#weeknav').classList.toggle('hide', t === 'live' || t === 'admin' || t === 'prof');
+  $('#weeknav').classList.toggle('collapsed', t === 'live' || t === 'admin' || t === 'prof');
   moveTabIndicator();
   if (t === 'stand') loadSeason(false);
-  if (t === 'admin') { renderAdmin(); loadEmails(); loadMailLog(); }
+  if (t === 'admin') { renderAdmin(); loadEmails(); loadMailLog(); loadNotifySettings(); if (Date.now() - live.at > 60000) loadLive(); }
   if (t === 'live') { renderLive(); if (Date.now() - live.at > 15000) loadLive(); if (liveGame) loadGameSummary(liveGame); }
 }
 function moveTabIndicator() {
@@ -1865,6 +1984,13 @@ $('#padd').addEventListener('keydown', e => { if (e.key === 'Enter') $('#paddbtn
 $('#elist').addEventListener('change', e => { const i = e.target.closest('[data-email]'); if (i) saveEmail(i); });
 $('#elist').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('[data-email]')) e.target.blur(); });
 $('#testmail').onclick = sendTestEmail;
+$('#ns-save').onclick = saveNotify;
+$('#ns-now').onclick = sendReminderNow;
+$('#ns-leads').addEventListener('click', e => {
+  const b = e.target.closest('[data-lead]'); if (!b) return;
+  if (!b.classList.contains('on') && $('#ns-leads').querySelectorAll('.on').length >= 4) { toast('Pick up to 4 reminder times'); return; }
+  b.classList.toggle('on');
+});
 $('#plist').addEventListener('click', e => {
   const k = e.target.closest('[data-pw]'); if (k) { adminResetPassword(k.dataset.pw); return; }
   const b = e.target.closest('[data-del]'); if (b) deleteProfile(b.dataset.del);

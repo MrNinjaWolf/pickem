@@ -108,9 +108,9 @@ ${lines.map(l => `<p style="margin:0 0 10px;font-size:15px;line-height:1.5;color
   const text = `${title}\n\n${lines.map(l => l.replace(/<[^>]+>/g, '').replace(/&#39;/g, "'").replace(/&amp;/g, '&')).join('\n')}\n\n${appUrl()}`;
   return {html, text};
 }
-export async function send(transport, to, subject, title, lines) {
-  const {html, text} = page(title, lines);
-  await transport.sendMail({from: `"NFL Pick'Em" <${E('GMAIL_USER') || 'pickem@localhost'}>`, to, subject, html, text});
+export async function send(transport, to, subject, title, lines, {fromName = "NFL Pick'Em", note = ''} = {}) {
+  const {html, text} = page(title, note ? [...lines, `<i>From the administrator:</i> ${esc(note)}`] : lines);
+  await transport.sendMail({from: `"${fromName}" <${E('GMAIL_USER') || 'pickem@localhost'}>`, to, subject, html, text});
 }
 
 // ---------------------------------------------------------------- what to send
@@ -176,36 +176,91 @@ function doneEmail(d, r, w, next, tables = {}) {
   }
   return {subject: `${w.label} is final${next ? ` — make your ${next.label} picks` : ''}`, title: `${w.label} results are in`, lines};
 }
-function remindEmail(d, r, w, first) {
-  const open = w.games.filter(g => g.state === 'pre' && Date.parse(g.date) > now());
-  const lines = [`The first <b>${esc(w.label)}</b> game kicks off <b>${esc(et(first))}</b>, about 2 hours from now. Picks lock at each game's kickoff.`];
-  let missing = 0;
-  for (const {lg, name} of r.leagues) {
-    const p = picksOf(d, lg, w.key, name), left = open.filter(g => !p[g.id]).length;
-    missing += left;
-    lines.push(`<b>${esc(lg)}</b>: you've picked <b>${open.length - left} of ${open.length}</b> open games${left ? '' : ' ✔'}.`);
-  }
-  return missing ? {subject: `⏰ ${w.label} picks lock in 2 hours`, title: `Don't forget your ${w.label} picks`, lines} : null;
+// ---------------------------------------------------------------- settings (Admin tab > Emails & notifications)
+// Stored under /settings/notify by the administrator; read on every run, so changes apply within 15 minutes.
+export const DEFAULT_SETTINGS = {paused: false, resultsEmail: true, resultsPush: true, resultsDelayMin: 0,
+  remindEmail: true, remindPush: true, leads: '2', everyGameDay: false, gamePush: true, note: '', fromName: "NFL Pick'Em"};
+export function readSettings(raw) {
+  const s = {...DEFAULT_SETTINGS}, r = raw && typeof raw === 'object' ? raw : {};
+  for (const k of ['paused', 'resultsEmail', 'resultsPush', 'remindEmail', 'remindPush', 'everyGameDay', 'gamePush'])
+    if (typeof r[k] === 'boolean') s[k] = r[k];
+  if (Number.isFinite(+r.resultsDelayMin)) s.resultsDelayMin = Math.min(2880, Math.max(0, Math.round(+r.resultsDelayMin)));
+  if (typeof r.leads === 'string') s.leads = r.leads;
+  s.leadList = [...new Set(String(s.leads).split(',').map(Number).filter(x => x >= 0.25 && x <= 72))].sort((a, b) => b - a).slice(0, 4);
+  if (typeof r.note === 'string') s.note = r.note.trim().slice(0, 400);
+  if (typeof r.fromName === 'string' && r.fromName.trim()) s.fromName = r.fromName.trim().replace(/["<>\\\r\n]/g, '').slice(0, 40);
+  return s;
 }
 
-/** One pass of the schedule. Each email goes to each person at most once (recorded under /mail/sent). */
+const etDay = t => new Date(t).toLocaleDateString('en-CA', {timeZone: 'America/New_York'});            // 2026-11-20
+const etWeekday = t => new Date(t).toLocaleDateString('en-US', {timeZone: 'America/New_York', weekday: 'long'});
+function untilText(ms) {
+  const m = ms / 60000;
+  if (m < 60) return `in about ${Math.max(5, Math.round(m / 5) * 5)} minutes`;
+  if (m < 36 * 60) { const h = Math.round(m / 60); return `in about ${h} hour${h === 1 ? '' : 's'}`; }
+  const dd = Math.round(m / 1440); return `in about ${dd} day${dd === 1 ? '' : 's'}`;
+}
+/** Reminders due now for a week: for each group (the whole week, or each game day), the closest reminder time that has arrived. */
+function reminderSlots(w, s, t) {
+  const groups = [];
+  if (s.everyGameDay) {
+    const by = {};
+    for (const g of w.games) { const k = etDay(Date.parse(g.date)); (by[k] = by[k] || []).push(g); }
+    for (const [day, gs] of Object.entries(by)) groups.push({tag: '-d' + day.replace(/-/g, ''), games: gs, perDay: true});
+  } else groups.push({tag: '', games: w.games, perDay: false});
+  const out = [];
+  for (const gr of groups) {
+    const first = Math.min(...gr.games.map(g => Date.parse(g.date)).filter(x => !isNaN(x)));
+    const active = s.leadList.filter(L => t >= first - L * 3600e3 && t < first);
+    if (!active.length) continue;
+    const L = Math.min(...active);                              // a missed earlier reminder isn't sent late
+    out.push({suffix: (L === 2 && !gr.tag ? '' : '-' + String(L).replace('.', '_') + 'h') + gr.tag, first, games: gr.games, perDay: gr.perDay});
+  }
+  return out;
+}
+function missingFor(d, leagues, w, slot, t) {
+  const open = slot.games.filter(g => g.state === 'pre' && Date.parse(g.date) > t);
+  return {open, per: leagues.map(({lg, name}) => { const p = picksOf(d, lg, w.key, name); return {lg, left: open.filter(g => !p[g.id]).length}; })};
+}
+function remindEmail(d, r, w, slot, t) {
+  const {open, per} = missingFor(d, r.leagues, w, slot, t);
+  if (!per.some(x => x.left)) return null;
+  const which = slot.perDay ? `${etWeekday(slot.first)}'s first game` : `The first ${esc(w.label)} game`;
+  const lines = [`${which} kicks off <b>${esc(et(slot.first))}</b>, ${untilText(slot.first - t)}. Picks lock at each game's kickoff.`];
+  for (const x of per) lines.push(`<b>${esc(x.lg)}</b>: you've picked <b>${open.length - x.left} of ${open.length}</b> open games${x.left ? '' : ' ✔'}.`);
+  const subject = slot.perDay ? `⏰ ${etWeekday(slot.first)}'s games start ${untilText(slot.first - t)}` : `⏰ ${w.label} picks lock ${untilText(slot.first - t)}`;
+  return {subject, title: `Don't forget your ${w.label} picks`, lines};
+}
+
+/** Loads everything a run needs. */
+async function loadState(q) {
+  const [access, emails, leagues, sent, kick, subs, settings, final] = await Promise.all(
+    ['/access', '/emails', '/leagues', '/mail/sent', '/kickoffs', '/push', '/settings/notify', '/mail/final'].map(p => q('GET', p).catch(() => null)));
+  const d = {access: access || {}, emails: emails || {}, leagues: leagues || {}, sent: sent || {}};
+  const phones = Object.entries(subs || {}).filter(([, s]) => s && Object.keys(s).length)
+    .map(([user, s]) => ({user, subs: s, leagues: leaguesOf(d, user)})).filter(p => p.leagues.length);
+  return {d, kick: kick || {}, phones, s: readSettings(settings), final: final || {}};
+}
+
+/** One pass of the schedule. Each message goes to each person at most once (recorded under /mail/sent). */
 export async function runOnce({transport = mailer(), log = console.log} = {}) {
   const q = database(await signInMailer());
   const weeks = await nearbyWeeks();
-  const [access, emails, leagues, sent, kick, subs] = await Promise.all(['/access', '/emails', '/leagues', '/mail/sent', '/kickoffs', '/push'].map(p => q('GET', p)));
-  const d = {access: access || {}, emails: emails || {}, leagues: leagues || {}, sent: sent || {}};
+  const {d, kick, phones, s, final} = await loadState(q);
   const people = recipients(d), t = now();
+  const opts = {fromName: s.fromName, note: s.note};
   let count = 0;
 
   // Kickoff times, so the database refuses a pick (or a change to one) once its game has started.
   for (const w of weeks) {
-    const have = (kick || {})[w.key] || {}, changed = {};
+    const have = kick[w.key] || {}, changed = {};
     for (const g of w.games) { const k = Date.parse(g.date); if (!isNaN(k) && have[g.id] !== k) changed[g.id] = k; }
     if (Object.keys(changed).length) {
       try { await q('PATCH', `/kickoffs/${w.key}`, changed); log(`kickoff times saved for ${w.label}`); }
       catch (e) { log(`could not save kickoff times for ${w.label}: ${e.message}`); }
     }
   }
+  if (s.paused) { log('emails and notifications are paused (Admin tab)'); return 0; }
 
   // Games for any week, for season standings (fetched once per run)
   const cache = new Map(weeks.map(w => [w.key, w.games]));
@@ -218,68 +273,106 @@ export async function runOnce({transport = mailer(), log = console.log} = {}) {
     return cache.get(key);
   };
   const tableCache = {};
-  const tablesFor = async (r, season) => {
+  const tablesFor = async (leagues, season) => {
     const out = {};
-    for (const {lg} of r.leagues) out[lg] = tableCache[lg] || (tableCache[lg] = await seasonTable(d, lg, season, weekGames));
+    for (const {lg} of leagues) out[lg] = tableCache[lg] || (tableCache[lg] = await seasonTable(d, lg, season, weekGames));
     return out;
   };
+  const was = (key, kind, user) => !!(((d.sent[key] || {})[kind] || {})[user]);
+  const mark = (key, kind, user) => q('PUT', `/mail/sent/${key}/${kind}/${user}`, t);
+  const keys = await vapidKeys(q, {create: true});              // created once, so phones can subscribe
+  const canPush = !!(keys && phones.length);
+
   for (const w of weeks) {
     if (!w.games.length) continue;
     const times = w.games.map(g => Date.parse(g.date)).filter(x => !isNaN(x));
-    const first = Math.min(...times), last = Math.max(...times);
-    const jobs = [];
-    if (w.games.every(g => g.state === 'post') && t - last < 4 * 86400e3) jobs.push('done');   // finished in the last few days
-    if (t >= first - 2 * 3600e3 && t < first) jobs.push('remind');                             // 2 hours before the first kickoff
-    for (const kind of jobs) {
-      const done = ((d.sent[w.key] || {})[kind]) || {};
-      for (const r of people) {
-        if (done[r.user]) continue;
-        const msg = kind === 'done' ? doneEmail(d, r, w, weeks.find(x => x.i === w.i + 1), await tablesFor(r, w.key.split('-')[0])) : remindEmail(d, r, w, first);
-        if (!msg) continue;                                   // reminder: nothing missing
-        try {
-          await send(transport, r.email, msg.subject, msg.title, msg.lines);
-          await q('PUT', `/mail/sent/${w.key}/${kind}/${r.user}`, t);
-          count++; log(`sent ${kind} for ${w.label} to ${r.user}`);
-        } catch (e) { log(`could not send ${kind} for ${w.label} to ${r.user}: ${e.message}`); }
+    const last = Math.max(...times);
+
+    // ---- the week is final (after the chosen delay)
+    if (w.games.every(g => g.state === 'post') && t - last < 4 * 86400e3) {
+      let seen = final[w.key];
+      if (!seen) { seen = t; await q('PUT', `/mail/final/${w.key}`, t).catch(() => {}); }
+      if (t - seen >= s.resultsDelayMin * 60000) {
+        const next = weeks.find(x => x.i === w.i + 1);
+        if (s.resultsEmail) for (const r of people) {
+          if (was(w.key, 'done', r.user)) continue;
+          const msg = doneEmail(d, r, w, next, await tablesFor(r.leagues, w.key.split('-')[0]));
+          try { await send(transport, r.email, msg.subject, msg.title, msg.lines, opts); await mark(w.key, 'done', r.user); count++; log(`sent results for ${w.label} to ${r.user}`); }
+          catch (e) { log(`could not send results for ${w.label} to ${r.user}: ${e.message}`); }
+        }
+        if (s.resultsPush && canPush) for (const p of phones) {
+          if (was(w.key, 'pushdone', p.user)) continue;
+          const {lg, name} = p.leagues[0], pk = picksOf(d, lg, w.key, name);
+          let c = 0, l = 0;
+          for (const g of w.games) { if (!pk[g.id]) continue; const win = winner(g); if (win === 'TIE') continue; if (pk[g.id] === win) c++; else l++; }
+          if (!c && !l) continue;
+          const n = await pushTo(q, keys, p.user, p.subs, {title: `${w.label} is final`, body: `You went ${c}-${l}. Open Pick'Em for the standings.`, url: appUrl()}, log);
+          if (n) { await mark(w.key, 'pushdone', p.user); count += n; }
+        }
       }
     }
-  }
 
-  // ---------------- phone notifications: the 2-hour reminder, and the result of each game you picked
-  const keys = await vapidKeys(q, {create: true});              // created once, so phones can subscribe
-  const phones = Object.entries(subs || {}).filter(([, s]) => s && Object.keys(s).length)
-    .map(([user, s]) => ({user, subs: s, leagues: leaguesOf(d, user)})).filter(p => p.leagues.length);
-  if (keys && phones.length) {
-    const mark = async (key, kind, user) => q('PUT', `/mail/sent/${key}/${kind}/${user}`, t);
-    const was = (key, kind, user) => !!(((d.sent[key] || {})[kind] || {})[user]);
-    for (const w of weeks) {
-      if (!w.games.length) continue;
-      const first = Math.min(...w.games.map(g => Date.parse(g.date)).filter(x => !isNaN(x)));
-      if (t >= first - 2 * 3600e3 && t < first) {
-        const open = w.games.filter(g => g.state === 'pre' && Date.parse(g.date) > t);
-        for (const p of phones) {
-          if (was(w.key, 'pushremind', p.user)) continue;
-          const missing = Math.max(...p.leagues.map(({lg, name}) => { const pk = picksOf(d, lg, w.key, name); return open.filter(g => !pk[g.id]).length; }));
-          if (!missing) continue;
-          const n = await pushTo(q, keys, p.user, p.subs, {title: `\u23F0 ${w.label} picks lock soon`,
-            body: `You still have ${missing} game${missing === 1 ? '' : 's'} to pick. The first kickoff is ${et(first)}.`, url: appUrl()}, log);
-          if (n) { await mark(w.key, 'pushremind', p.user); count += n; log(`notified ${p.user}: ${w.label} reminder`); }
-        }
+    // ---- reminders before kickoff
+    for (const slot of reminderSlots(w, s, t)) {
+      if (s.remindEmail) for (const r of people) {
+        const kind = 'remind' + slot.suffix;
+        if (was(w.key, kind, r.user)) continue;
+        const msg = remindEmail(d, r, w, slot, t);
+        if (!msg) continue;
+        try { await send(transport, r.email, msg.subject, msg.title, msg.lines, opts); await mark(w.key, kind, r.user); count++; log(`sent ${kind} for ${w.label} to ${r.user}`); }
+        catch (e) { log(`could not send ${kind} for ${w.label} to ${r.user}: ${e.message}`); }
       }
-      for (const g of w.games) {
-        if (g.state !== 'post' || t - Date.parse(g.date) > 12 * 3600e3) continue;   // games that finished recently
-        const win = winner(g), kind = 'g' + g.id;
-        for (const p of phones) {
-          if (was(w.key, kind, p.user)) continue;
-          const pick = p.leagues.map(({lg, name}) => picksOf(d, lg, w.key, name)[g.id]).find(Boolean);
-          if (!pick) continue;
-          const right = pick === win, score = `${g.away.abbr} ${g.away.score} \u2013 ${g.home.score} ${g.home.abbr}`;
-          const title = win === 'TIE' ? `${score}: a tie` : right ? `\u2705 Your pick ${pick} won` : `\u274C Your pick ${pick} lost`;
-          const n = await pushTo(q, keys, p.user, p.subs, {title, body: `Final: ${score}`, url: appUrl()}, log);
-          if (n) { await mark(w.key, kind, p.user); count += n; log(`notified ${p.user}: result of ${score}`); }
-        }
+      if (s.remindPush && canPush) for (const p of phones) {
+        const kind = 'pushremind' + slot.suffix;
+        if (was(w.key, kind, p.user)) continue;
+        const {per} = missingFor(d, p.leagues, w, slot, t), missing = Math.max(0, ...per.map(x => x.left));
+        if (!missing) continue;
+        const n = await pushTo(q, keys, p.user, p.subs, {title: slot.perDay ? `⏰ ${etWeekday(slot.first)}'s games start ${untilText(slot.first - t)}` : `⏰ ${w.label} picks lock soon`,
+          body: `You still have ${missing} game${missing === 1 ? '' : 's'} to pick. First kickoff ${et(slot.first)}.`, url: appUrl()}, log);
+        if (n) { await mark(w.key, kind, p.user); count += n; log(`notified ${p.user}: ${kind} ${w.label}`); }
+      }
+    }
+
+    // ---- the result of each game you picked
+    if (s.gamePush && canPush) for (const g of w.games) {
+      if (g.state !== 'post' || t - Date.parse(g.date) > 12 * 3600e3) continue;   // games that finished recently
+      const win = winner(g), kind = 'g' + g.id;
+      for (const p of phones) {
+        if (was(w.key, kind, p.user)) continue;
+        const pick = p.leagues.map(({lg, name}) => picksOf(d, lg, w.key, name)[g.id]).find(Boolean);
+        if (!pick) continue;
+        const right = pick === win, score = `${g.away.abbr} ${g.away.score} – ${g.home.score} ${g.home.abbr}`;
+        const title = win === 'TIE' ? `${score}: a tie` : right ? `✅ Your pick ${pick} won` : `❌ Your pick ${pick} lost`;
+        const n = await pushTo(q, keys, p.user, p.subs, {title, body: `Final: ${score}`, url: appUrl()}, log);
+        if (n) { await mark(w.key, kind, p.user); count += n; log(`notified ${p.user}: result of ${score}`); }
       }
     }
   }
   return count;
+}
+
+/** Admin tab "Send a reminder now": everyone still missing picks for the next games gets an email and/or a
+ *  notification right away (whichever channels are turned on). Not recorded, so scheduled reminders still go out. */
+export async function remindNow({transport = mailer(), log = console.log} = {}) {
+  const q = database(await signInMailer());
+  const weeks = await nearbyWeeks(), t = now();
+  const {d, phones, s} = await loadState(q);
+  const w = weeks.find(x => x.games.some(g => g.state === 'pre' && Date.parse(g.date) > t));
+  if (!w) return {emails: 0, phones: 0, week: null};
+  const open = w.games.filter(g => g.state === 'pre' && Date.parse(g.date) > t);
+  const slot = {suffix: '-now', first: Math.min(...open.map(g => Date.parse(g.date))), games: open, perDay: false};
+  let emails = 0, pushes = 0;
+  if (s.remindEmail) for (const r of recipients(d)) {
+    const msg = remindEmail(d, r, w, slot, t);
+    if (!msg) continue;
+    try { await send(transport, r.email, msg.subject, msg.title, msg.lines, {fromName: s.fromName, note: s.note}); emails++; }
+    catch (e) { log(`could not send reminder to ${r.user}: ${e.message}`); }
+  }
+  const keys = s.remindPush && phones.length ? await vapidKeys(q, {create: true}) : null;
+  if (keys) for (const p of phones) {
+    const missing = Math.max(0, ...missingFor(d, p.leagues, w, slot, t).per.map(x => x.left));
+    if (!missing) continue;
+    pushes += await pushTo(q, keys, p.user, p.subs, {title: `⏰ ${w.label} picks`, body: `You still have ${missing} game${missing === 1 ? '' : 's'} to pick. Next kickoff ${et(slot.first)}.`, url: appUrl()}, log);
+  }
+  return {emails, phones: pushes, week: w.label};
 }
