@@ -72,6 +72,9 @@ shows each run.
 ## Password resets (one-time setup)
 
 - **Forgot password?** on the login screen emails a one-hour reset link to the player's saved address.
+  The player always sees the same reply, but the **Activity** list on the Admin tab (and the
+  `reset-request` log under *Netlify > Logs > Functions*) says what happened: link sent, no email
+  saved for that login, already sent in the last 5 minutes, or the email failed.
 - On the **Admin** tab, the key button next to a player lets `dakota` set a new password for them.
 
 Both need administrator access to Firebase Authentication:

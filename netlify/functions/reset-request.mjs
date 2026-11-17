@@ -2,7 +2,7 @@
 // address saved for that login. The reply is the same whether or not the login exists, so it
 // can't be used to find out who has an account.
 import crypto from 'node:crypto';
-import {missingSettings, signInMailer, database, mailer, send, appUrl, readSettings} from './lib/pickem.mjs';
+import {missingSettings, signInMailer, database, mailer, send, appUrl, readSettings, logEvent} from './lib/pickem.mjs';
 import {adminReady} from './lib/admin.mjs';
 
 const reply = (body, status = 200) => new Response(JSON.stringify(body), {status, headers: {'content-type': 'application/json'}});
@@ -15,19 +15,29 @@ export default async req => {
   const u = String(username || '').trim().toLowerCase();
   if (!/^[a-z0-9_-]{1,40}$/.test(u)) return reply({error: 'Enter your username.'}, 400);
   const q = database(await signInMailer());
+  // What happened goes in the Admin activity log and the Netlify function log; the player only
+  // ever sees DONE, so the form can't be used to find out who has an account.
+  const note = async what => { console.log('reset-request:', what); await logEvent(q, u, what); };
   const [email, last] = await Promise.all([q('GET', `/emails/${u}`), q('GET', `/resetlog/${u}`)]);
-  if (!email) return reply(DONE);
-  if (last && Date.now() - last < 5 * 60000) return reply(DONE);         // one email per 5 minutes
+  if (!email) { await note(`Password reset asked for ${u}: no email saved for that login, nothing sent`); return reply(DONE); }
+  if (last && Date.now() - last < 5 * 60000) { await note(`Password reset asked for ${u}: a link was already sent in the last 5 minutes, nothing sent`); return reply(DONE); }
   const token = crypto.randomBytes(24).toString('base64url');
   const hash = crypto.createHash('sha256').update(token).digest('hex');
   await q('PUT', `/resets/${hash}`, {user: u, exp: Date.now() + 3600e3});
-  await q('PUT', `/resetlog/${u}`, Date.now());
   const link = `${appUrl()}/?reset=${token}`;
-  await send(mailer(), email, "Reset your Pick'Em password", 'Reset your password', [
-    `Someone asked to reset the password for <b>${u}</b>. If that was you, use the button below within an hour.`,
-    `<a href="${link}" style="color:#ffc53d">Choose a new password</a>`,
-    "If you didn't ask for this, you can ignore this email. Your password won't change."],
-    {fromName: readSettings(await q('GET', '/settings/notify').catch(() => null)).fromName});
+  try {
+    await send(mailer(), email, "Reset your Pick'Em password", 'Reset your password', [
+      `Someone asked to reset the password for <b>${u}</b>. If that was you, use the button below within an hour.`,
+      `<a href="${link}" style="color:#ffc53d">Choose a new password</a>`,
+      "If you didn't ask for this, you can ignore this email. Your password won't change."],
+      {fromName: readSettings(await q('GET', '/settings/notify').catch(() => null)).fromName});
+  } catch (e) {
+    await q('DELETE', `/resets/${hash}`).catch(() => {});
+    await note(`Password reset email to ${u} failed: ${e.message}`);
+    return reply({error: "The reset email couldn't be sent. Try again in a minute, or ask the administrator."}, 502);
+  }
+  await q('PUT', `/resetlog/${u}`, Date.now());           // only a link that went out starts the 5-minute wait
+  await note(`Password reset link emailed to ${u} (${email.replace(/^(.).*@/, '$1…@')})`);
   return reply(DONE);
 };
 
