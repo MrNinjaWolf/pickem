@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pick'Em">
+<meta name="theme-color" content="#0B1F3A">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>NFL Pick'Em</title>
+<style>
+:root{--navy:#0B1F3A;--panel:#14305A;--card:#1B3A6B;--red:#D50A0A;--gold:#FFB612;--green:#2ECC71;--bad:#FF5C5C;--muted:#9FB3D1;--edge:#3C5C93}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--navy);color:#fff;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Roboto,Helvetica,Arial,sans-serif}
+body{min-height:100vh;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 16px 10px;border-bottom:4px solid var(--red)}
+h1{margin:0;font:italic 800 28px/1 Georgia,serif}
+h1 span{color:var(--gold)}
+.hr{display:flex;gap:6px}
+.pill{background:none;border:1px solid var(--edge);color:var(--muted);border-radius:999px;padding:7px 12px;font-size:12px;font-weight:600}
+#syncbtn.on{color:var(--green);border-color:var(--green)}
+#syncbtn.off{color:var(--bad);border-color:var(--bad)}
+.bar{display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px;background:var(--panel)}
+select,.btn,input{font-size:16px;border-radius:8px;border:0;padding:10px}
+select{background:#fff;color:#000;flex:1 1 140px;min-width:0}
+.btn{background:var(--red);color:#fff;font-weight:700}
+.btn.alt{background:var(--card)}
+.btn:disabled{opacity:.6}
+#status{padding:6px 14px;font-size:12px;color:var(--muted);background:var(--panel)}
+.tabs{display:flex;background:var(--panel);border-top:1px solid var(--navy)}
+.tabs button{flex:1;padding:13px 6px;background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);font-weight:700;font-size:15px}
+.tabs button.on{color:#fff;border-bottom-color:var(--gold)}
+#summary{padding:12px 16px 2px;font-size:14px}
+#summary b{font-size:17px}
+#summary small{color:var(--muted)}
+#games{padding:10px 12px 48px;display:flex;flex-direction:column;gap:10px}
+.empty{color:var(--muted);padding:24px 4px;text-align:center}
+.card{display:grid;grid-template-columns:1fr 80px 1fr;gap:6px;background:var(--panel);border-radius:14px;padding:10px}
+.team{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:8px 4px;min-height:116px;border-radius:12px;border:2px solid var(--edge);background:var(--card);color:#fff;font:inherit}
+.team.sel{background:var(--c);color:var(--fg);border:3px solid var(--gold)}
+.team.ok{border-color:var(--green)}
+.team.bad{border-color:var(--bad)}
+.team img{width:48px;height:48px;object-fit:contain}
+.team .ab{font-weight:800;font-size:18px}
+.team .nm{font-size:11px;opacity:.85;text-align:center;line-height:1.15}
+.team .tag{font-size:11px;font-weight:800;letter-spacing:.08em;height:13px}
+.mid{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.sc{font-weight:800;font-size:20px;white-space:nowrap}
+.st{font-size:11px;font-weight:700;margin-top:4px;color:var(--muted)}
+.st.live{color:#FF6B6B}
+.st.fin{color:var(--green)}
+.hide{display:none!important}
+#sctitle,#sttitle{padding:14px 16px 0;font-size:19px;font-weight:800}
+#stnote{padding:2px 16px 10px;color:var(--muted);font-size:13px}
+#leader{padding:2px 16px 10px;color:var(--gold);font-weight:700;font-size:14px}
+.tw{overflow-x:auto;padding:0 12px 48px}
+table{border-collapse:collapse;width:100%;min-width:max-content}
+th,td{padding:10px 11px;text-align:center;white-space:nowrap;font-size:14px}
+th{background:var(--red)}
+td{background:var(--panel)}
+tr:nth-child(even) td{background:var(--card)}
+td:first-child,th:first-child{text-align:left;position:sticky;left:0;z-index:1}
+td.ok{background:#1E6B3A!important}
+td.bad{background:#7A1F1F!important}
+td.none{color:var(--muted)}
+tr.sum td{background:var(--navy)!important;font-weight:800}
+tr.sum.c td+td+td{color:var(--green)}
+tr.sum.w td+td+td{color:var(--bad)}
+tr.sum.p td+td+td,tr.sum.n td+td+td{color:var(--muted)}
+tr.lead td{color:var(--gold);font-weight:800}
+.login,.noacc{padding:30px 20px;max-width:440px;margin:0 auto}
+.login h2,.noacc h2{margin:0 0 6px;font-size:22px}
+.login p,.noacc p{color:var(--muted);font-size:14px;line-height:1.45}
+.login label{display:block;margin:14px 0 5px;font-size:13px;color:var(--muted)}
+.login input,dialog input{width:100%;background:#fff;color:#000}
+.login .btn{width:100%;margin-top:18px;padding:13px}
+.err{min-height:20px;margin-top:12px;color:var(--bad);font-size:14px}
+details{margin-top:18px;color:var(--muted);font-size:13px}
+summary{cursor:pointer;padding:4px 0}
+dialog{background:var(--panel);color:#fff;border:2px solid var(--edge);border-radius:14px;padding:18px;width:min(92vw,420px)}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+dialog label{display:block;margin:12px 0 4px;font-size:13px;color:var(--muted)}
+dialog p{font-size:14px;line-height:1.4}
+.row{display:flex;gap:8px;margin-top:16px}
+.row .btn{flex:1}
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#000c;color:#fff;padding:10px 16px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:10;max-width:90vw;text-align:center}
+#toast.show{opacity:1}
+</style>
+<script src="config.js"></script>
+</head>
+<body>
+<header>
+  <h1>NFL <span>PICK'EM</span></h1>
+  <div class="hr hide" id="hdrright">
+    <button id="syncbtn" class="pill" type="button">&hellip;</button>
+    <button id="acctbtn" class="pill" type="button">Account</button>
+  </div>
+</header>
+
+<section id="login" class="login hide">
+  <h2>Log in</h2>
+  <p>Use the username and password the administrator created for you.</p>
+  <label for="lguser">Username</label>
+  <input id="lguser" type="text" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false">
+  <label for="lgpass">Password</label>
+  <input id="lgpass" type="password" autocomplete="current-password">
+  <details id="lgcfg">
+    <summary>Server settings</summary>
+    <label for="lgurl">Firebase database URL</label>
+    <input id="lgurl" type="url" placeholder="https://your-project-default-rtdb.firebaseio.com" autocapitalize="off" autocorrect="off">
+    <label for="lgkey">Firebase Web API key</label>
+    <input id="lgkey" type="text" autocapitalize="off" autocorrect="off" spellcheck="false">
+  </details>
+  <div class="err" id="loginerr"></div>
+  <button class="btn" id="lgbtn" type="button">Log in</button>
+</section>
+
+<section id="noaccess" class="noacc hide">
+  <h2>No database assigned</h2>
+  <p>You are logged in as <b id="naname"></b>, but no database has been assigned to this account yet. Ask the administrator to give you access, then tap Check again.</p>
+  <p id="nadetail" style="color:var(--gold)"></p>
+  <div class="row">
+    <button class="btn alt" id="nacheck" type="button">Check again</button>
+    <button class="btn" id="nalogout" type="button">Log out</button>
+  </div>
+</section>
+
+<div id="app" class="hide">
+  <div class="bar">
+    <select id="profile" aria-label="Profile"></select>
+    <button class="btn" id="addp" type="button">+ Add</button>
+    <button class="btn alt" id="delp" type="button">Delete</button>
+    <select id="period" aria-label="Week"></select>
+    <button class="btn alt" id="refresh" type="button">Refresh</button>
+  </div>
+  <div id="status">Loading&hellip;</div>
+  <div class="tabs">
+    <button id="t-picks" class="on" type="button">Picks</button>
+    <button id="t-score" type="button">Week Scorecard</button>
+    <button id="t-stand" type="button">Standings</button>
+  </div>
+
+  <section id="picks">
+    <div id="summary"></div>
+    <div id="games"></div>
+  </section>
+  <section id="score" class="hide">
+    <div id="sctitle"></div>
+    <div id="leader"></div>
+    <div class="tw"><table id="sctable"></table></div>
+  </section>
+  <section id="stand" class="hide">
+    <div id="sttitle"></div>
+    <div id="stnote"></div>
+    <div class="tw"><table id="sttable"></table></div>
+  </section>
+</div>
+
+<dialog id="acctdlg">
+  <h2 style="margin:0 0 8px">Account</h2>
+  <p>Logged in as <b id="acctwho"></b></p>
+  <div id="dbrow">
+    <label for="dbsel">Database</label>
+    <select id="dbsel" style="width:100%"></select>
+  </div>
+  <div class="row">
+    <button class="btn alt" id="acctclose" type="button">Close</button>
+    <button class="btn" id="acctlogout" type="button">Log out</button>
+  </div>
+</dialog>
+<div id="toast"></div>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const ESPN = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard';
+const DOMAIN = '@pickem.app';
+const PERIODS = Array.from({length: 18}, (_, i) => ({label: 'Week ' + (i + 1), type: 2, week: i + 1})).concat([
+  {label: 'Wild Card', type: 3, week: 1}, {label: 'Divisional', type: 3, week: 2},
+  {label: 'Conference Championship', type: 3, week: 3}, {label: 'Super Bowl', type: 3, week: 5}]);
+
+const LS = k => { try { return JSON.parse(localStorage.getItem('nflpickem.' + k)); } catch (e) { return null; } };
+const setLS = (k, v) => { try { localStorage.setItem('nflpickem.' + k, JSON.stringify(v)); } catch (e) { /* storage full or blocked */ } };
+const lsl = (lg, k) => LS('db.' + lg + '.' + k);            // data kept separately for each database
+const setlsl = (lg, k, v) => setLS('db.' + lg + '.' + k, v);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+const cmp = (a, b) => a.localeCompare(b, undefined, {sensitivity: 'base'});
+const clean = s => String(s).replace(/[\t\r\n|.$#\[\]\/"\\]/g, ' ').trim().slice(0, 24);
+const contrast = hex => { const n = parseInt(hex.replace('#', ''), 16); return (0.299 * (n >> 16) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) > 150 ? '#000' : '#fff'; };
+
+const now = new Date();
+const CFG0 = window.PICKEM_CONFIG || {};
+const savedCfg = LS('cfg') || {};
+let cfg = {url: String(CFG0.databaseUrl || savedCfg.url || '').trim().replace(/\/+$/, ''), key: String(CFG0.apiKey || savedCfg.key || '').trim()};
+let auth = LS('auth');                    // {user, refresh, id, exp} - the saved login
+let leagues = LS('leagues') || [];        // databases this user has been given
+let league = LS('league') || '';
+let profiles = [], picks = {}, profile = null;   // picks: "profile|weekKey|gameId" -> team abbreviation
+let screen = 'login', loadedOnce = false;
+let season = now.getMonth() < 2 ? now.getFullYear() - 1 : now.getFullYear();
+let period = PERIODS[0];
+let games = [];
+let lastFetch = 0, wasComplete = false, lastKey = null;
+
+const wk = () => season + '-' + period.type + '-' + period.week;
+const pk = (p, gid) => p + '|' + wk() + '|' + gid;
+const save = () => { if (!league) return; setlsl(league, 'profiles', profiles); setlsl(league, 'picks', picks); setlsl(league, 'profile', profile); };
+const active = () => screen === 'app' && !!auth && !!league;
+const syncOn = () => active() && !!cfg.url;
+
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('show'), 2600);
+}
+const setStatus = s => { $('#status').textContent = s; };
+const timeStr = () => new Date().toLocaleTimeString([], {hour: 'numeric', minute: '2-digit', second: '2-digit'});
+
+// ---------------------------------------------------------------- login (Firebase Authentication over HTTPS)
+class AuthError extends Error {
+  constructor(m) { super(m); this.fatal = /TOKEN_EXPIRED|USER_DISABLED|USER_NOT_FOUND|INVALID_REFRESH_TOKEN|INVALID_GRANT/.test(m); }
+}
+async function authPost(url, body, form) {
+  const r = await fetch(url, {method: 'POST',
+    headers: {'Content-Type': form ? 'application/x-www-form-urlencoded' : 'application/json'},
+    body: form ? new URLSearchParams(body).toString() : JSON.stringify(body)});
+  let j = {};
+  try { j = await r.json(); } catch (e) { /* no body */ }
+  if (!r.ok) throw new AuthError((j.error && j.error.message) || 'HTTP ' + r.status);
+  return j;
+}
+async function signIn(user, pass) {
+  const j = await authPost('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + encodeURIComponent(cfg.key),
+    {email: user + DOMAIN, password: pass, returnSecureToken: true});
+  auth = {user, refresh: j.refreshToken, id: j.idToken, exp: Date.now() + (+j.expiresIn || 3600) * 1000};
+  setLS('auth', auth);
+}
+async function idToken() {
+  if (!auth) throw new AuthError('TOKEN_EXPIRED');
+  if (Date.now() > auth.exp - 120000) {
+    const j = await authPost('https://securetoken.googleapis.com/v1/token?key=' + encodeURIComponent(cfg.key),
+      {grant_type: 'refresh_token', refresh_token: auth.refresh}, true);
+    auth = {user: auth.user, refresh: j.refresh_token || auth.refresh, id: j.id_token, exp: Date.now() + (+j.expires_in || 3600) * 1000};
+    setLS('auth', auth);
+  }
+  return auth.id;
+}
+function friendly(e) {
+  const m = String((e && e.message) || e);
+  if (/INVALID_LOGIN_CREDENTIALS|INVALID_PASSWORD|EMAIL_NOT_FOUND/.test(m)) return 'Wrong username or password.';
+  if (/USER_DISABLED/.test(m)) return 'This account has been disabled.';
+  if (/TOO_MANY_ATTEMPTS/.test(m)) return 'Too many attempts. Wait a few minutes and try again.';
+  if (/OPERATION_NOT_ALLOWED/.test(m)) return 'Email/password sign-in is not turned on in Firebase.';
+  if (/API key|API_KEY/i.test(m)) return 'The Firebase Web API key is not valid.';
+  if (e instanceof TypeError || /Failed to fetch|NetworkError|Load failed/i.test(m)) return 'Could not reach the server. Check your connection and the database URL.';
+  return m;
+}
+
+// ---------------------------------------------------------------- database access (Realtime Database REST, signed with the login)
+const dbBase = () => cfg.url + '/leagues/' + encodeURIComponent(league);
+async function dbCall(method, url, body) {                 // url has no ".json" yet
+  const t = await idToken();
+  const r = await fetch(url + '.json?auth=' + encodeURIComponent(t), {
+    method, headers: body !== undefined ? {'Content-Type': 'application/json'} : {},
+    body: body !== undefined ? JSON.stringify(body) : undefined});
+  if (!r.ok) { const e = new Error('HTTP ' + r.status); e.status = r.status; throw e; }
+  try { return await r.json(); } catch (e) { return null; }
+}
+/** The databases this user is tagged for: /access/<username>/leagues/<database> = true */
+let accessNote = '';                       // why the last access lookup found nothing (shown on the no-access screen)
+async function fetchLeagues() {
+  try {
+    const m = (await dbCall('GET', cfg.url + '/access/' + encodeURIComponent(auth.user) + '/leagues')) || {};
+    accessNote = 'The database returned: ' + JSON.stringify(m) + '.';
+    return Object.keys(m).filter(k => m[k] === true).sort(cmp);
+  } catch (e) {
+    if (e.status === 401 || e.status === 403) { accessNote = 'denied'; return []; }
+    throw e;
+  }
+}
+function showNoAccess() {
+  $('#naname').textContent = auth.user;
+  $('#nadetail').textContent = accessNote === 'denied'
+    ? 'The database refused the request (permission denied). The security rules have probably not been published yet, or the account email is not ' + auth.user + DOMAIN + '.'
+    : 'Nothing was found at access/' + auth.user + '/leagues with the value true. ' + accessNote + ' Check the path, and that the value is true and not text in quotes.';
+  showScreen('noaccess');
+}
+
+let queue = Promise.resolve();
+const enqueue = fn => { const p = queue.then(fn); queue = p.catch(() => {}); return p; };
+
+function chip() {
+  const b = $('#syncbtn');
+  b.className = 'pill';
+  b.textContent = chip.bad ? 'Sync offline' : 'Synced';
+  b.classList.add(chip.bad ? 'off' : 'on');
+}
+function syncProblem(e) {
+  if (e && e.fatal) { logout('Your login expired or the account was disabled. Please log in again.'); return; }
+  if (e && (e.status === 401 || e.status === 403)) { recheckAccess(); return; }
+  chip.bad = true; chip();
+}
+function syncSend(method, path, body) {
+  if (!syncOn()) return;
+  const lg = league, url = dbBase() + path;
+  enqueue(async () => {
+    try { await dbCall(method, url, body); chip.bad = false; }
+    catch (e) { setlsl(lg, 'pending', true); syncProblem(e); }
+    chip();
+  }).catch(() => {});
+}
+function flat() {                                   // every leaf as a multi-path update
+  const o = {};
+  profiles.forEach(p => { o['profiles/' + p] = true; });
+  Object.entries(picks).forEach(([k, v]) => { const [p, w, g] = k.split('|'); o[`picks/${w}/${p}/${g}`] = v; });
+  return o;
+}
+const sameMap = (a, b) => { const ka = Object.keys(a); return ka.length === Object.keys(b).length && ka.every(k => b[k] === a[k]); };
+
+function pull() {
+  if (!syncOn()) return Promise.resolve('off');
+  const lg = league, base = dbBase();
+  return enqueue(async () => {
+    try {
+      if (lg !== league) return 'stale';
+      if (lsl(lg, 'pending')) {
+        const f = flat();
+        if (Object.keys(f).length) await dbCall('PATCH', base, f);
+        setlsl(lg, 'pending', false);
+      }
+      const root = (await dbCall('GET', base)) || {};
+      if (lg !== league) return 'stale';
+      const rp = Object.keys(root.profiles || {}).sort(cmp);
+      const rk = {};
+      for (const [w, byP] of Object.entries(root.picks || {}))
+        for (const [p, byG] of Object.entries(byP || {}))
+          for (const [g, ab] of Object.entries(byG || {})) rk[`${p}|${w}|${g}`] = ab;
+      chip.bad = false;
+      if (!rp.length && !Object.keys(rk).length) {                         // brand-new database: publish what is here
+        const f = flat();
+        if (Object.keys(f).length) await dbCall('PATCH', base, f);
+        chip(); return 'empty';
+      }
+      if (JSON.stringify(rp) === JSON.stringify([...profiles].sort(cmp)) && sameMap(rk, picks)) { chip(); return 'same'; }
+      if (rp.length) profiles = rp;
+      picks = rk;
+      if (!profiles.includes(profile)) profile = profiles[0];
+      save(); buildSelects(); render(); chip();
+      return 'remote';
+    } catch (e) { syncProblem(e); return 'error'; }
+  });
+}
+
+// ---------------------------------------------------------------- screens, sessions, access
+function showScreen(s) {
+  screen = s;
+  ['login', 'noaccess', 'app'].forEach(n => $('#' + n).classList.toggle('hide', n !== s));
+  $('#hdrright').classList.toggle('hide', s === 'login');
+}
+function fillLoginFields() {
+  $('#lgurl').value = cfg.url; $('#lgkey').value = cfg.key;
+  $('#lguser').value = (auth && auth.user) || LS('lastuser') || '';
+  $('#lgcfg').open = !(cfg.url && cfg.key);
+}
+function logout(msg) {
+  auth = null; setLS('auth', null);
+  profiles = []; picks = {}; profile = null; games = [];
+  $('#loginerr').textContent = msg || '';
+  $('#lgpass').value = '';
+  fillLoginFields();
+  showScreen('login');
+}
+async function doLogin() {
+  const err = m => { $('#loginerr').textContent = m; };
+  const u = $('#lguser').value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, ''), p = $('#lgpass').value;
+  const url = $('#lgurl').value.trim().replace(/\/+$/, ''), key = $('#lgkey').value.trim();
+  if (!u || !p) { err('Enter your username and password.'); return; }
+  if (!/^https:\/\//.test(url) || !key) { $('#lgcfg').open = true; err('Enter the database URL and Web API key under Server settings.'); return; }
+  cfg = {url, key}; setLS('cfg', cfg); setLS('lastuser', u);
+  $('#lgbtn').disabled = true; err('Signing in\u2026');
+  try {
+    await signIn(u, p);
+    leagues = await fetchLeagues();
+    setLS('leagues', leagues);
+  } catch (e) {
+    auth = null; setLS('auth', null);
+    err(friendly(e)); $('#lgbtn').disabled = false; return;
+  }
+  err(''); $('#lgpass').value = ''; $('#lgbtn').disabled = false;
+  await afterLogin();
+}
+async function afterLogin() {
+  if (!leagues.length) { showNoAccess(); return; }
+  await enterLeague(leagues.includes(league) ? league : leagues[0]);
+}
+let checking = false;
+async function recheckAccess() {                    // a request was refused: has the tag been removed?
+  if (checking || screen !== 'app') return;
+  checking = true;
+  try {
+    const now2 = await fetchLeagues();
+    leagues = now2; setLS('leagues', now2);
+    if (!now2.length) showNoAccess();
+    else if (!now2.includes(league)) { toast('Your access to "' + league + '" was removed'); await enterLeague(now2[0]); }
+    else { chip.bad = true; chip(); }
+  } catch (e) { /* offline - try again next time */ }
+  checking = false;
+}
+async function enterLeague(id) {
+  league = id; setLS('league', id);
+  profiles = lsl(id, 'profiles') || []; picks = lsl(id, 'picks') || {}; profile = lsl(id, 'profile');
+  if (!profiles.includes(profile)) profile = profiles[0] || null;
+  showScreen('app');
+  $('#acctbtn').textContent = auth.user;
+  buildSelects(); chip();
+  games = LS('games.' + wk()) || [];
+  render();
+  if (!loadedOnce) { loadedOnce = true; await loadGames(true); } else await loadGames(false);
+  await pull();
+  if (league === id && !profiles.length) {          // first time in an empty database
+    const n = clean(prompt('Enter a name for your first profile:') || '') || 'Player 1';
+    profiles = [n]; profile = n; save();
+    syncSend('PUT', '/profiles/' + encodeURIComponent(n), true);
+    buildSelects(); render();
+  }
+}
+
+// ---------------------------------------------------------------- games
+function parseGame(ev) {
+  const comp = ev.competitions[0];
+  const g = {id: String(ev.id), date: ev.date || '', away: {}, home: {}};
+  for (const c of comp.competitors) {
+    const t = c.team || {}, side = c.homeAway === 'home' ? 'home' : 'away';
+    g[side] = {abbr: t.abbreviation || '', name: t.displayName || '', logo: t.logo || '',
+               color: '#' + (t.color || '555555'), score: parseInt(c.score, 10) || 0};
+  }
+  const ty = (ev.status && ev.status.type) || {};
+  g.state = ty.state || 'pre';
+  g.detail = ty.shortDetail || '';
+  if (g.state === 'post' && ty.completed === false) g.state = 'pre';   // postponed games
+  return g;
+}
+const winner = g => g.state !== 'post' ? null : g.away.score > g.home.score ? g.away.abbr : g.home.score > g.away.score ? g.home.abbr : 'TIE';
+const byDate = (a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id);
+const anyLive = () => games.some(g => g.state === 'in');
+const isComplete = () => games.length > 0 && games.every(g => g.state === 'post');
+
+/** W correct, L wrong, P pending/live, T tie, N no pick */
+function outcome(p, g) {
+  const pick = picks[pk(p, g.id)];
+  if (!pick) return 'N';
+  if (g.state !== 'post') return 'P';
+  const w = winner(g);
+  return w === 'TIE' ? 'T' : pick === w ? 'W' : 'L';
+}
+
+async function loadGames(initial) {
+  const asked = period;
+  try {
+    const url = initial ? ESPN + '?limit=100'
+      : `${ESPN}?limit=100&dates=${season}&seasontype=${period.type}&week=${period.week}`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    if (initial) {
+      season = (j.season && j.season.year) || season;
+      const st = j.season && j.season.type;
+      const type = (st && typeof st === 'object' ? st.type : st) || 2;
+      const week = (j.week && j.week.number) || 1;
+      let p = PERIODS.find(x => x.type === type && x.week === week);
+      if (!p) { p = {label: `Season type ${type} \u2013 Week ${week}`, type, week}; PERIODS.push(p); }
+      period = p;
+      buildSelects();
+    } else if (asked !== period) {
+      return;                                   // user changed weeks while loading
+    }
+    games = (j.events || []).map(parseGame).sort(byDate);
+    setLS('games.' + wk(), games);
+    lastFetch = Date.now();
+    setStatus('Updated ' + timeStr() + (anyLive() ? ' \u2022 live games' : ''));
+    const same = wk() === lastKey, before = wasComplete;
+    render();
+    const done = isComplete();
+    if (same && done && !before) showTab('score');   // week just finished
+    wasComplete = done; lastKey = wk();
+  } catch (e) {
+    setStatus('Offline \u2013 showing saved data');
+    const saved = LS('games.' + wk());
+    if (saved && (saved.length || !games.length)) { games = saved; render(); }
+  }
+}
+
+// ---------------------------------------------------------------- picks + profiles
+function pick(gid, abbr) {
+  const g = games.find(x => x.id === gid);
+  if (!g || !profile) return;
+  if (g.state !== 'pre') { toast('Picks lock at kickoff'); return; }
+  const k = pk(profile, gid), cleared = picks[k] === abbr;
+  if (cleared) delete picks[k]; else picks[k] = abbr;
+  save();
+  const path = `/picks/${wk()}/${encodeURIComponent(profile)}/${gid}`;
+  if (cleared) syncSend('DELETE', path); else syncSend('PUT', path, abbr);
+  render();
+}
+function addProfile() {
+  const n = clean(prompt('New profile name:') || '');
+  if (!n) return;
+  const dup = profiles.find(p => p.toLowerCase() === n.toLowerCase());
+  if (dup) { profile = dup; toast('That profile already exists'); }
+  else { profiles.push(n); profiles.sort(cmp); profile = n; syncSend('PUT', '/profiles/' + encodeURIComponent(n), true); }
+  save(); buildSelects(); render();
+}
+function deleteProfile() {
+  if (profiles.length <= 1) { alert('You need at least one profile.'); return; }
+  if (!confirm(`Delete profile "${profile}" and all of its picks?`)) return;
+  for (const k of Object.keys(picks)) {
+    if (k.startsWith(profile + '|')) {
+      const [p, w, g] = k.split('|');
+      syncSend('DELETE', `/picks/${w}/${encodeURIComponent(p)}/${g}`);
+      delete picks[k];
+    }
+  }
+  syncSend('DELETE', '/profiles/' + encodeURIComponent(profile));
+  profiles = profiles.filter(p => p !== profile);
+  profile = profiles[0];
+  save(); buildSelects(); render();
+}
+
+// ---------------------------------------------------------------- rendering
+function buildSelects() {
+  $('#profile').innerHTML = profiles.map(p => `<option${p === profile ? ' selected' : ''}>${esc(p)}</option>`).join('');
+  $('#period').innerHTML = PERIODS.map((p, i) => `<option value="${i}"${p === period ? ' selected' : ''}>${esc(p.label)}</option>`).join('');
+}
+
+function teamBtn(g, side) {
+  const t = g[side], sel = picks[pk(profile, g.id)] === t.abbr, w = winner(g);
+  let cls = 'team ' + side, tag = '';
+  if (sel) {
+    cls += ' sel'; tag = 'PICK';
+    if (g.state === 'post' && w !== 'TIE') { const ok = t.abbr === w; cls += ok ? ' ok' : ' bad'; tag = ok ? '\u2713' : '\u2717'; }
+  }
+  return `<button type="button" class="${cls}" data-g="${esc(g.id)}" data-t="${esc(t.abbr)}" style="--c:${esc(t.color)};--fg:${contrast(t.color)}">` +
+    (t.logo ? `<img src="${esc(t.logo)}" alt="" loading="lazy">` : '') +
+    `<span class="ab">${esc(t.abbr)}</span><span class="nm">${esc(t.name)}</span><span class="tag">${tag}</span></button>`;
+}
+function mid(g) {
+  const sc = g.state === 'pre' ? '@' : `${g.away.score} \u2013 ${g.home.score}`;
+  const st = g.state === 'in' ? `<div class="st live">\u25CF LIVE<br>${esc(g.detail)}</div>`
+    : g.state === 'post' ? `<div class="st fin">${esc((g.detail || 'Final').toUpperCase())}</div>`
+    : `<div class="st">${esc(g.detail)}</div>`;
+  return `<div class="mid"><div class="sc">${sc}</div>${st}</div>`;
+}
+
+function renderPicks() {
+  let made = 0, w = 0, l = 0, pend = 0;
+  games.forEach(g => { const o = outcome(profile, g); if (o !== 'N') made++; if (o === 'W') w++; if (o === 'L') l++; if (o === 'P') pend++; });
+  $('#summary').innerHTML = `<b>${esc(profile)}</b> &nbsp;${made} of ${games.length} picked \u2022 ${w} correct \u2022 ${l} wrong \u2022 ${pend} pending<br>` +
+    `<small>Tap a team to pick it (tap again to clear). Picks lock at kickoff.</small>`;
+  $('#games').innerHTML = games.length
+    ? games.map(g => `<div class="card">${teamBtn(g, 'away')}${mid(g)}${teamBtn(g, 'home')}</div>`).join('')
+    : '<div class="empty">No games to show for this week.</div>';
+}
+
+function renderScore() {
+  const n = profiles.length, W = Array(n).fill(0), L = Array(n).fill(0), P = Array(n).fill(0), N = Array(n).fill(0);
+  let rows = '';
+  for (const g of games) {
+    let cells = '';
+    profiles.forEach((p, i) => {
+      const o = outcome(p, g), ab = picks[pk(p, g.id)];
+      if (o === 'N') { cells += '<td class="none">\u2014</td>'; N[i]++; }
+      else if (o === 'P') { cells += `<td>${esc(ab)}</td>`; P[i]++; }
+      else if (o === 'W') { cells += `<td class="ok">${esc(ab)} \u2713</td>`; W[i]++; }
+      else if (o === 'L') { cells += `<td class="bad">${esc(ab)} \u2717</td>`; L[i]++; }
+      else cells += `<td>${esc(ab)} =</td>`;
+    });
+    const score = g.state === 'pre' ? esc(g.detail) : `${g.away.score} \u2013 ${g.home.score}${g.state === 'in' ? ' \u25CF' : ''}`;
+    rows += `<tr><td>${esc(g.away.abbr)} @ ${esc(g.home.abbr)}</td><td>${score}</td>${cells}</tr>`;
+  }
+  const sum = (cls, label, arr) => `<tr class="sum ${cls}"><td>${label}</td><td></td>${arr.map(v => `<td>${v}</td>`).join('')}</tr>`;
+  rows += sum('c', 'CORRECT', W) + sum('w', 'WRONG', L) + sum('p', 'PENDING', P) + sum('n', 'NO PICK', N);
+  $('#sctable').innerHTML = `<tr><th>Game</th><th>Score</th>${profiles.map(p => `<th>${esc(p)}</th>`).join('')}</tr>${rows}`;
+
+  const done = games.filter(g => g.state === 'post').length, complete = isComplete();
+  $('#sctitle').textContent = `${period.label} \u2014 ` + (!games.length ? 'no games' : complete ? 'FINAL' : `${done} of ${games.length} games final`);
+  const best = Math.max(0, ...W);
+  $('#leader').textContent = best === 0 ? 'No correct picks yet'
+    : (complete ? 'Week winner: ' : 'Leading: ') + profiles.filter((p, i) => W[i] === best).join(', ') + ` (${best} correct)`;
+}
+function render() { if (!profiles.length) return; renderPicks(); renderScore(); renderStandings(); }
+
+// ---------------------------------------------------------------- season standings
+const weekOrder = key => { const f = key.split('-'); return (+f[1]) * 100 + (+f[2]); };
+function weekLabel(key) {
+  const [, type, week] = key.split('-').map(Number);
+  if (type === 2) return 'W' + week;
+  if (type === 3) return {1: 'WC', 2: 'DIV', 3: 'CONF', 5: 'SB'}[week] || 'P' + week;
+  return 'T' + type + 'W' + week;
+}
+const weekIsFinal = list => list.length > 0 && list.every(g => g.state === 'post');
+const seasonWeeks = () => [...new Set(Object.keys(picks).map(k => k.split('|')[1]))]
+  .filter(w => w.startsWith(season + '-')).sort((a, b) => weekOrder(a) - weekOrder(b));
+let seasonBusy = false, lastSeason = 0;
+
+function renderStandings() {
+  const weeks = seasonWeeks();
+  const st = profiles.map(p => ({p, c: 0, l: 0, won: 0, by: []}));
+  let finals = 0;
+  for (const key of weeks) {
+    const list = key === wk() ? games : (LS('games.' + key) || []);
+    const counts = st.map(s => {
+      let c = 0;
+      for (const g of list) {
+        const pick = picks[`${s.p}|${key}|${g.id}`];
+        if (!pick || g.state !== 'post') continue;
+        const w = winner(g);
+        if (w === 'TIE') continue;
+        if (pick === w) { c++; s.c++; } else s.l++;
+      }
+      s.by.push(list.length ? c : null);
+      return c;
+    });
+    if (weekIsFinal(list)) {
+      finals++;
+      const best = Math.max(0, ...counts);
+      if (best > 0) st.forEach((s, i) => { if (counts[i] === best) s.won++; });
+    }
+  }
+  st.sort((a, b) => b.c - a.c || a.l - b.l || cmp(a.p, b.p));
+  let rank = 0;
+  const rows = st.map((s, i) => {
+    if (i === 0 || s.c !== st[i - 1].c || s.l !== st[i - 1].l) rank = i + 1;
+    const tot = s.c + s.l;
+    const pct = tot ? (s.c / tot).toFixed(3).replace(/^0/, '') : '\u2014';
+    return `<tr${rank === 1 && s.c > 0 ? ' class="lead"' : ''}><td>${rank}. ${esc(s.p)}</td><td>${s.c}</td><td>${s.l}</td><td>${pct}</td><td>${s.won}</td>` +
+      s.by.map(v => `<td>${v === null ? '\u2014' : v}</td>`).join('') + '</tr>';
+  });
+  $('#sttable').innerHTML = '<tr><th>Profile</th><th>Correct</th><th>Wrong</th><th>Pct</th><th>Weeks Won</th>' +
+    weeks.map(k => `<th>${esc(weekLabel(k))}</th>`).join('') + '</tr>' + rows.join('');
+  $('#sttitle').textContent = `${season} Season \u2014 ${finals} week${finals === 1 ? '' : 's'} complete`;
+  if (!seasonBusy) $('#stnote').textContent = weeks.length
+    ? 'Weekly columns show correct picks. Weeks Won counts completed weeks only.'
+    : 'Make some picks and the standings will build here.';
+}
+
+/** Loads results for earlier weeks that have picks but are not fully final in the saved copy. */
+async function loadSeason(force) {
+  if (seasonBusy || (!force && Date.now() - lastSeason < 120000)) return;
+  const todo = seasonWeeks().filter(key => key !== wk() && !weekIsFinal(LS('games.' + key) || []));
+  lastSeason = Date.now();
+  if (!todo.length) { renderStandings(); return; }
+  seasonBusy = true;
+  $('#stnote').textContent = `Loading results for ${todo.length} week${todo.length === 1 ? '' : 's'}\u2026`;
+  for (const key of todo) {
+    const [yr, type, week] = key.split('-');
+    try {
+      const r = await fetch(`${ESPN}?limit=100&dates=${yr}&seasontype=${type}&week=${week}`);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const j = await r.json();
+      setLS('games.' + key, (j.events || []).map(parseGame).sort(byDate));
+    } catch (e) { /* offline: keep what is saved */ }
+  }
+  seasonBusy = false;
+  renderStandings();
+}
+
+function showTab(t) {
+  $('#picks').classList.toggle('hide', t !== 'picks');
+  $('#score').classList.toggle('hide', t !== 'score');
+  $('#stand').classList.toggle('hide', t !== 'stand');
+  $('#t-picks').classList.toggle('on', t === 'picks');
+  $('#t-score').classList.toggle('on', t === 'score');
+  $('#t-stand').classList.toggle('on', t === 'stand');
+  if (t === 'stand') loadSeason(false);
+}
+
+// ---------------------------------------------------------------- account dialog
+function openAcct() {
+  $('#acctwho').textContent = auth ? auth.user : '';
+  $('#dbsel').innerHTML = leagues.map(l => `<option${l === league ? ' selected' : ''}>${esc(l)}</option>`).join('');
+  $('#dbrow').classList.toggle('hide', leagues.length < 2);
+  $('#acctdlg').showModal();
+}
+
+// ---------------------------------------------------------------- wiring
+$('#games').addEventListener('click', e => { const b = e.target.closest('.team'); if (b) pick(b.dataset.g, b.dataset.t); });
+$('#profile').addEventListener('change', e => { profile = e.target.value; save(); render(); });
+$('#period').addEventListener('change', e => {
+  period = PERIODS[+e.target.value];
+  games = LS('games.' + wk()) || [];
+  render(); setStatus('Loading ' + period.label + '\u2026'); loadGames(false);
+});
+$('#addp').onclick = addProfile;
+$('#delp').onclick = deleteProfile;
+$('#refresh').onclick = () => {
+  loadGames(false); pull();
+  if (!$('#stand').classList.contains('hide')) loadSeason(true);
+};
+$('#t-picks').onclick = () => showTab('picks');
+$('#t-score').onclick = () => showTab('score');
+$('#t-stand').onclick = () => showTab('stand');
+$('#lgbtn').onclick = doLogin;
+$('#lgpass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+$('#syncbtn').onclick = openAcct;
+$('#acctbtn').onclick = openAcct;
+$('#acctclose').onclick = () => $('#acctdlg').close();
+$('#acctlogout').onclick = () => { $('#acctdlg').close(); logout(''); };
+$('#dbsel').addEventListener('change', e => { $('#acctdlg').close(); if (e.target.value !== league) enterLeague(e.target.value); });
+$('#nalogout').onclick = () => logout('');
+$('#nacheck').onclick = async () => {
+  try { leagues = await fetchLeagues(); setLS('leagues', leagues); await afterLogin(); }
+  catch (e) { if (e.fatal) logout('Please log in again.'); else toast('Could not check right now'); }
+};
+document.addEventListener('visibilitychange', () => { if (!document.hidden && active()) { loadGames(false); pull(); } });
+setInterval(() => {
+  if (document.hidden || !active()) return;
+  if (anyLive() || Date.now() - lastFetch > 300000) loadGames(false);
+  pull();
+}, 30000);
+
+(async function init() {
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* not supported */ }
+  fillLoginFields();
+  if (auth && auth.refresh && cfg.url && cfg.key) {
+    try { leagues = await fetchLeagues(); setLS('leagues', leagues); }
+    catch (e) {
+      if (e.fatal) { logout('Your session ended. Please log in again.'); return; }
+      /* offline: carry on with the saved list of databases */
+    }
+    await afterLogin();
+  } else {
+    showScreen('login');
+  }
+})();
+</script>
+</body>
+</html>
