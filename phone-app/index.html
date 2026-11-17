@@ -543,6 +543,11 @@ td.neg{color:var(--bad)}
           <div class="err" id="mailmsg"></div>
           <p id="maillast" style="margin:6px 0 0;color:var(--muted);font-size:12px"></p>
         </div>
+        <div class="wzbox" id="rulesbox">
+          <h3 style="margin:0">Database rules</h3>
+          <p class="muted" id="rulesmsg" style="margin:4px 0 0">Checking&hellip;</p>
+          <button class="btn full" id="rulesbtn" type="button">Install the latest rules</button>
+        </div>
         <div class="wzbox">
           <h3 style="margin:0">Databases</h3>
           <p class="muted" style="margin:4px 0 0">You're working in <b id="dbcur"></b>. Each player only sees the databases they've been given. Switch databases on your Profile page.</p>
@@ -1288,6 +1293,22 @@ async function sendReminderNow() {
   $('#ns-now').disabled = false;
 }
 
+// ---------------------------------------------------------------- administrator: database rules
+async function checkRules(install) {
+  const m = $('#rulesmsg'), b = $('#rulesbtn');
+  m.classList.remove('ok'); b.disabled = true;
+  if (install) m.textContent = 'Installing\u2026';
+  try {
+    const j = await api('/api/admin-rules', {idToken: await idToken(), install: !!install});
+    m.classList.toggle('ok', j.upToDate);
+    m.textContent = j.upToDate ? (install ? 'Installed. Your database rules are up to date \u2714' : 'Up to date \u2714')
+      : 'Out of date: some features (emails, activity, pick locking, notifications) need the latest rules. Tap Install.';
+    b.classList.toggle('alt', j.upToDate);
+    if (install && j.upToDate) { loadEmails(); loadMailLog(); loadNotifySettings(); loadActivity(); }
+  } catch (e) { m.textContent = e.message; }
+  b.disabled = false;
+}
+
 /** Administrator page: the players on this database. */
 function renderAdmin() {
   if (!isAdmin()) return;
@@ -1711,7 +1732,7 @@ function showTab(t) {
   $('#weeknav').classList.toggle('collapsed', t === 'live' || t === 'admin' || t === 'prof');
   moveTabIndicator();
   if (t === 'stand') loadSeason(false);
-  if (t === 'admin') { renderAdmin(); loadEmails(); loadMailLog(); loadNotifySettings(); loadActivity(); if (Date.now() - live.at > 60000) loadLive(); }
+  if (t === 'admin') { renderAdmin(); checkRules(false); loadEmails(); loadMailLog(); loadNotifySettings(); loadActivity(); if (Date.now() - live.at > 60000) loadLive(); }
   if (t === 'live') { renderLive(); if (Date.now() - live.at > 15000) loadLive(); if (liveGame) loadGameSummary(liveGame); }
 }
 function moveTabIndicator() {
@@ -2105,6 +2126,7 @@ $('#elist').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target
 $('#testmail').onclick = sendTestEmail;
 $('#ns-save').onclick = saveNotify;
 $('#newdbbtn').onclick = createDatabase;
+$('#rulesbtn').onclick = () => { if (confirm('Install the latest database rules from the app? This replaces the rules in Firebase.')) checkRules(true); };
 $('#newdb').addEventListener('keydown', e => { if (e.key === 'Enter') createDatabase(); });
 $('#ns-now').onclick = sendReminderNow;
 $('#ns-leads').addEventListener('click', e => {
