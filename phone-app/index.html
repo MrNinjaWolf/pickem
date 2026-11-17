@@ -83,6 +83,8 @@ select{background:#fff;color:#000;flex:1 1 140px;min-width:0}
 .wzfoot .btn{flex:1}
 .wzwait{color:var(--muted);text-align:center;font-size:13px;padding:6px}
 #games .btn.more{width:100%}
+.btn.clear{width:100%;background:none;border:1px solid var(--bad);color:var(--bad);padding:9px}
+.wz .btn.clear{margin-bottom:10px}
 .mid{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
 .sc{font-weight:800;font-size:20px;white-space:nowrap}
 .st{font-size:11px;font-weight:700;margin-top:4px;color:var(--muted)}
@@ -726,6 +728,22 @@ const skipped = new Set();            // games skipped for now
 const pickable = g => g.state === 'pre' && !(Date.parse(g.date) <= Date.now());
 const toPick = () => games.filter(g => pickable(g) && !picks[pk(profile, g.id)]);
 function resetWizard() { listMode = false; skipped.clear(); }
+const clearable = () => mine(profile) ? games.filter(g => pickable(g) && picks[pk(profile, g.id)]) : [];
+const clearBtn = () => clearable().length ? '<button type="button" class="btn clear" data-act="clear">Clear all picks</button>' : '';
+/** Removes your picks for this week on games that haven't kicked off. Started games keep theirs. */
+function clearAll() {
+  const list = clearable();
+  if (!list.length) return;
+  const locked = games.filter(g => !pickable(g) && picks[pk(profile, g.id)]).length;
+  if (!confirm(`Clear your ${list.length} pick${list.length === 1 ? '' : 's'} for ${period.label}?` +
+    (locked ? ` ${locked} game${locked === 1 ? ' has' : 's have'} already started and will keep ${locked === 1 ? 'its pick' : 'their picks'}.` : ''))) return;
+  for (const g of list) {
+    delete picks[pk(profile, g.id)];
+    syncSend('DELETE', `/picks/${wk()}/${encodeURIComponent(profile)}/${g.id}`);
+  }
+  save(); resetWizard(); render(); window.scrollTo(0, 0);
+  toast('Picks cleared');
+}
 function kickoff(g) {
   const d = new Date(g.date);
   return isNaN(d) ? esc(g.detail) : esc(d.toLocaleString([], {weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'})) +
@@ -777,7 +795,7 @@ function renderWizard(list) {
   loadSummary(g);
   if (list[1]) loadSummary(list[1]);                // have the next one ready
   $('#summary').innerHTML = '';
-  $('#games').innerHTML = `<div class="wz"><div class="wzhead"><b>Pick ${done + 1} of ${total}</b><span>${kickoff(g)}</span></div>` +
+  $('#games').innerHTML = `<div class="wz">${clearBtn()}<div class="wzhead"><b>Pick ${done + 1} of ${total}</b><span>${kickoff(g)}</span></div>` +
     `<div class="wzteams">${wzTeam(g, 'away')}<div class="wzat">@</div>${wzTeam(g, 'home')}</div>` +
     (d ? compareBox(g, d) + leadersBox(g, d) + formBox(g, d)
        : `<div class="wzwait">${sumFail.has(g.id) ? "Couldn't load stats from ESPN. Records are still shown above." : 'Loading stats…'}</div>`) +
@@ -809,7 +827,7 @@ function renderPicks() {
   $('#summary').innerHTML = `<b>${esc(profile)}</b> &nbsp;${made} of ${games.length} picked \u2022 ${w} correct \u2022 ${l} wrong \u2022 ${pend} pending<br>` +
     `<small>${hint}</small>`;
   $('#games').innerHTML = games.length
-    ? (left ? `<button type="button" class="btn more" data-act="resume">Pick the ${left} remaining game${left === 1 ? '' : 's'} one at a time</button>` : '') +
+    ? clearBtn() + (left ? `<button type="button" class="btn more" data-act="resume">Pick the ${left} remaining game${left === 1 ? '' : 's'} one at a time</button>` : '') +
       games.map(g => `<div class="card">${teamBtn(g, 'away')}${mid(g)}${teamBtn(g, 'home')}</div>`).join('')
     : '<div class="empty">No games to show for this week.</div>';
 }
@@ -941,6 +959,7 @@ function openAcct() {
 $('#games').addEventListener('click', e => {
   const act = e.target.closest('[data-act]');
   if (act) {
+    if (act.dataset.act === 'clear') { clearAll(); return; }
     if (act.dataset.act === 'skip') skipped.add(act.dataset.g);
     else if (act.dataset.act === 'all') listMode = true;
     else resetWizard();
