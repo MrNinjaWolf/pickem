@@ -1,0 +1,4 @@
+# Netlify publishes only the phone-app folder. Files outside it (like
+# database.rules.json) stay in the repo but never go on the website.
+[build]
+  publish = "phone-app"
