@@ -8,6 +8,7 @@
 //   GMAIL_USER              the Gmail address emails are sent from
 //   GMAIL_APP_PASSWORD      a Gmail app password for that address
 import nodemailer from 'nodemailer';
+import {vapidKeys, pushTo} from './push.mjs';
 
 const E = k => (process.env[k] || '').trim();
 export const DOMAIN = '@pickem.app', ADMIN = 'dakota', MAILER = 'mailer';
@@ -18,7 +19,7 @@ export const missingSettings = () => REQUIRED.filter(k => !E(k));
 const ESPN = () => E('ESPN_BASE') || 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
 const AUTH = () => E('PICKEM_AUTH_BASE') || 'https://identitytoolkit.googleapis.com';
 const now = () => E('PICKEM_NOW') ? Date.parse(E('PICKEM_NOW')) : Date.now();
-const appUrl = () => E('APP_URL') || E('URL') || 'https://dak-nfl.netlify.app';
+export const appUrl = () => E('APP_URL') || E('URL') || 'https://dak-nfl.netlify.app';
 
 export const PERIODS = Array.from({length: 18}, (_, i) => ({label: 'Week ' + (i + 1), type: 2, week: i + 1})).concat([
   {label: 'Wild Card', type: 3, week: 1}, {label: 'Divisional', type: 3, week: 2},
@@ -114,15 +115,18 @@ export async function send(transport, to, subject, title, lines) {
 
 // ---------------------------------------------------------------- what to send
 /** Each login with an email, and the databases where it has access and a name on the player list. */
+function leaguesOf(d, user) {
+  const tagged = ((d.access[user] || {}).leagues) || {};
+  return Object.keys(tagged).filter(lg => tagged[lg] === true && d.leagues[lg]).map(lg => {
+    const name = Object.keys(d.leagues[lg].profiles || {}).find(n => n.toLowerCase() === user);
+    return name && {lg, name};
+  }).filter(Boolean);
+}
 function recipients(d) {
   const out = [];
   for (const [user, email] of Object.entries(d.emails || {})) {
     if (typeof email !== 'string' || !email.includes('@')) continue;
-    const tagged = ((d.access[user] || {}).leagues) || {};
-    const leagues = Object.keys(tagged).filter(lg => tagged[lg] === true && d.leagues[lg]).map(lg => {
-      const name = Object.keys(d.leagues[lg].profiles || {}).find(n => n.toLowerCase() === user);
-      return name && {lg, name};
-    }).filter(Boolean);
+    const leagues = leaguesOf(d, user);
     if (leagues.length) out.push({user, email, leagues});
   }
   return out;
@@ -130,7 +134,31 @@ function recipients(d) {
 const picksOf = (d, lg, key, name) => ((((d.leagues[lg] || {}).picks || {})[key] || {})[name]) || {};
 const winner = g => g.away.score > g.home.score ? g.away.abbr : g.home.score > g.away.score ? g.home.abbr : 'TIE';
 
-function doneEmail(d, r, w, next) {
+/** Season standings for one database, ranked like the app: Pct, then point differential, then total correct. */
+async function seasonTable(d, lg, season, weekGames) {
+  const all = ((d.leagues[lg] || {}).picks) || {};
+  const st = Object.keys(d.leagues[lg].profiles || {}).map(n => ({n, c: 0, l: 0, d: 0}));
+  for (const key of Object.keys(all).filter(k => k.startsWith(season + '-'))) {
+    const games = await weekGames(key);
+    for (const s of st) {
+      const p = (all[key] || {})[s.n] || {};
+      for (const g of games) {
+        if (g.state !== 'post' || !p[g.id]) continue;
+        const w = winner(g); if (w === 'TIE') continue;
+        if (p[g.id] === w) s.c++; else s.l++;
+        const t = g.away.abbr === p[g.id] ? g.away : g.home.abbr === p[g.id] ? g.home : null;
+        if (t) s.d += t.score - (t === g.away ? g.home : g.away).score;
+      }
+    }
+  }
+  const pct = s => s.c + s.l ? s.c / (s.c + s.l) : -1;
+  return st.filter(s => s.c + s.l).sort((a, b) => pct(b) - pct(a) || b.d - a.d || b.c - a.c || a.n.localeCompare(b.n));
+}
+const ordinal = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 - 20) % 10] || ['th', 'st', 'nd', 'rd'][n % 100] || 'th');
+const fmtPct = s => (s.c / (s.c + s.l)).toFixed(3).replace(/^0/, '');
+const fmtDiff = s => (s.d > 0 ? '+' : '') + s.d;
+
+function doneEmail(d, r, w, next, tables = {}) {
   const lines = [];
   for (const {lg, name} of r.leagues) {
     const tally = n => { let c = 0, l = 0; const p = picksOf(d, lg, w.key, n);
@@ -138,6 +166,9 @@ function doneEmail(d, r, w, next) {
     const me = tally(name), all = Object.keys(d.leagues[lg].profiles || {}).map(n => ({n, ...tally(n)}));
     const best = Math.max(0, ...all.map(x => x.c)), top = all.filter(x => x.c === best && best > 0).map(x => esc(x.n));
     lines.push(`<b>${esc(lg)}</b>: you went <b>${me.c}-${me.l}</b>.${top.length ? ` Week winner: <b>${top.join(', ')}</b> (${best} correct).` : ''}`);
+    const table = tables[lg] || [], at = table.findIndex(x => x.n === name);
+    if (table.length) lines.push(`Season standings${at >= 0 ? ` \u2014 you're <b>${ordinal(at + 1)}</b> of ${table.length}` : ''}: ` +
+      table.slice(0, 5).map((x, i) => `${i + 1}. ${x.n === name ? '<b>' : ''}${esc(x.n)} ${fmtPct(x)} (${fmtDiff(x)})${x.n === name ? '</b>' : ''}`).join(' \u2022 '));
   }
   if (next && next.games.length) {
     const first = Math.min(...next.games.map(g => Date.parse(g.date)));
@@ -161,10 +192,37 @@ function remindEmail(d, r, w, first) {
 export async function runOnce({transport = mailer(), log = console.log} = {}) {
   const q = database(await signInMailer());
   const weeks = await nearbyWeeks();
-  const [access, emails, leagues, sent] = await Promise.all(['/access', '/emails', '/leagues', '/mail/sent'].map(p => q('GET', p)));
+  const [access, emails, leagues, sent, kick, subs] = await Promise.all(['/access', '/emails', '/leagues', '/mail/sent', '/kickoffs', '/push'].map(p => q('GET', p)));
   const d = {access: access || {}, emails: emails || {}, leagues: leagues || {}, sent: sent || {}};
   const people = recipients(d), t = now();
   let count = 0;
+
+  // Kickoff times, so the database refuses a pick (or a change to one) once its game has started.
+  for (const w of weeks) {
+    const have = (kick || {})[w.key] || {}, changed = {};
+    for (const g of w.games) { const k = Date.parse(g.date); if (!isNaN(k) && have[g.id] !== k) changed[g.id] = k; }
+    if (Object.keys(changed).length) {
+      try { await q('PATCH', `/kickoffs/${w.key}`, changed); log(`kickoff times saved for ${w.label}`); }
+      catch (e) { log(`could not save kickoff times for ${w.label}: ${e.message}`); }
+    }
+  }
+
+  // Games for any week, for season standings (fetched once per run)
+  const cache = new Map(weeks.map(w => [w.key, w.games]));
+  const weekGames = async key => {
+    if (!cache.has(key)) {
+      const [yr, type, week] = key.split('-');
+      try { const j = await espn(`&dates=${yr}&seasontype=${type}&week=${week}`); cache.set(key, (j.events || []).map(parseGame)); }
+      catch (e) { cache.set(key, []); }
+    }
+    return cache.get(key);
+  };
+  const tableCache = {};
+  const tablesFor = async (r, season) => {
+    const out = {};
+    for (const {lg} of r.leagues) out[lg] = tableCache[lg] || (tableCache[lg] = await seasonTable(d, lg, season, weekGames));
+    return out;
+  };
   for (const w of weeks) {
     if (!w.games.length) continue;
     const times = w.games.map(g => Date.parse(g.date)).filter(x => !isNaN(x));
@@ -176,13 +234,50 @@ export async function runOnce({transport = mailer(), log = console.log} = {}) {
       const done = ((d.sent[w.key] || {})[kind]) || {};
       for (const r of people) {
         if (done[r.user]) continue;
-        const msg = kind === 'done' ? doneEmail(d, r, w, weeks.find(x => x.i === w.i + 1)) : remindEmail(d, r, w, first);
+        const msg = kind === 'done' ? doneEmail(d, r, w, weeks.find(x => x.i === w.i + 1), await tablesFor(r, w.key.split('-')[0])) : remindEmail(d, r, w, first);
         if (!msg) continue;                                   // reminder: nothing missing
         try {
           await send(transport, r.email, msg.subject, msg.title, msg.lines);
           await q('PUT', `/mail/sent/${w.key}/${kind}/${r.user}`, t);
           count++; log(`sent ${kind} for ${w.label} to ${r.user}`);
         } catch (e) { log(`could not send ${kind} for ${w.label} to ${r.user}: ${e.message}`); }
+      }
+    }
+  }
+
+  // ---------------- phone notifications: the 2-hour reminder, and the result of each game you picked
+  const keys = await vapidKeys(q, {create: true});              // created once, so phones can subscribe
+  const phones = Object.entries(subs || {}).filter(([, s]) => s && Object.keys(s).length)
+    .map(([user, s]) => ({user, subs: s, leagues: leaguesOf(d, user)})).filter(p => p.leagues.length);
+  if (keys && phones.length) {
+    const mark = async (key, kind, user) => q('PUT', `/mail/sent/${key}/${kind}/${user}`, t);
+    const was = (key, kind, user) => !!(((d.sent[key] || {})[kind] || {})[user]);
+    for (const w of weeks) {
+      if (!w.games.length) continue;
+      const first = Math.min(...w.games.map(g => Date.parse(g.date)).filter(x => !isNaN(x)));
+      if (t >= first - 2 * 3600e3 && t < first) {
+        const open = w.games.filter(g => g.state === 'pre' && Date.parse(g.date) > t);
+        for (const p of phones) {
+          if (was(w.key, 'pushremind', p.user)) continue;
+          const missing = Math.max(...p.leagues.map(({lg, name}) => { const pk = picksOf(d, lg, w.key, name); return open.filter(g => !pk[g.id]).length; }));
+          if (!missing) continue;
+          const n = await pushTo(q, keys, p.user, p.subs, {title: `\u23F0 ${w.label} picks lock soon`,
+            body: `You still have ${missing} game${missing === 1 ? '' : 's'} to pick. The first kickoff is ${et(first)}.`, url: appUrl()}, log);
+          if (n) { await mark(w.key, 'pushremind', p.user); count += n; log(`notified ${p.user}: ${w.label} reminder`); }
+        }
+      }
+      for (const g of w.games) {
+        if (g.state !== 'post' || t - Date.parse(g.date) > 12 * 3600e3) continue;   // games that finished recently
+        const win = winner(g), kind = 'g' + g.id;
+        for (const p of phones) {
+          if (was(w.key, kind, p.user)) continue;
+          const pick = p.leagues.map(({lg, name}) => picksOf(d, lg, w.key, name)[g.id]).find(Boolean);
+          if (!pick) continue;
+          const right = pick === win, score = `${g.away.abbr} ${g.away.score} \u2013 ${g.home.score} ${g.home.abbr}`;
+          const title = win === 'TIE' ? `${score}: a tie` : right ? `\u2705 Your pick ${pick} won` : `\u274C Your pick ${pick} lost`;
+          const n = await pushTo(q, keys, p.user, p.subs, {title, body: `Final: ${score}`, url: appUrl()}, log);
+          if (n) { await mark(w.key, kind, p.user); count += n; log(`notified ${p.user}: result of ${score}`); }
+        }
       }
     }
   }

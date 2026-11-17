@@ -16,6 +16,12 @@ Logins and picks are stored in Firebase. Files outside `phone-app` never go on t
   administrator, edit `ADMIN` in `phone-app/index.html` and `netlify/functions/lib/pickem.mjs`,
   and the `dakota@pickem.app` entries in `database.rules.json`.
 
+## Server settings
+
+The app reads the Firebase database URL and Web API key from the Netlify environment variables
+`PICKEM_DB_URL` and `PICKEM_API_KEY` (through `/api/config`), so the login screen only asks for a
+username and password. `phone-app/config.js` can still hold them instead.
+
 ## Database rules
 
 `database.rules.json` must be pasted into Firebase by hand: **Build > Realtime Database > Rules**,
@@ -36,8 +42,9 @@ A scheduled Netlify function (`netlify/functions/pickem-mail.mjs`) runs every 15
 - a **results email** to every player with an email address once all of a week's games are final, and
 - a **reminder** 2 hours before the next week's first kickoff, only to players who still have picks to make.
 
-Each email goes to each person once. Emails are set on the Admin tab, and only `dakota` and the
-mailer login can read them.
+Each email goes to each person once. Players add their own email (they're asked for one at login if
+it's missing, and can change it on their Profile page), and the administrator can also set them on
+the Admin tab. Only the player, `dakota` and the mailer login can read an address.
 
 1. **Gmail app password.** In the Google account you want to send from, turn on 2-Step Verification,
    then open *Security > App passwords*, create one named "Pick'Em", and copy the 16 letters.
@@ -59,3 +66,31 @@ mailer login can read them.
 
 Scheduled functions only run on the live site, not on deploy previews. Netlify's *Logs > Functions* page
 shows each run.
+
+## Password resets (one-time setup)
+
+- **Forgot password?** on the login screen emails a one-hour reset link to the player's saved address.
+- On the **Admin** tab, the key button next to a player lets `dakota` set a new password for them.
+
+Both need administrator access to Firebase Authentication:
+
+1. In Firebase, open *Project settings > Service accounts* and tap **Generate new private key**. A
+   `.json` file downloads.
+2. Open that file, copy **all** of its text, and paste it into a new Netlify environment variable named
+   `FIREBASE_SERVICE_ACCOUNT`. Then redeploy.
+3. Publish the current `database.rules.json`.
+
+Keep that file private: anyone who has it can manage your Firebase project. Delete the download once
+it's in Netlify.
+
+## Phone notifications
+
+Each player turns them on from their **Profile** page. On iPhone, notifications only work when Pick'Em
+is opened from the Home Screen (Share > Add to Home Screen). Players get:
+
+- a reminder 2 hours before a week's first kickoff, if they still have picks to make, and
+- the result of each game they picked, once it's final.
+
+The scheduled job sends them. Its push keys are created automatically on the first run and stored
+under `/vapid` (readable only by the mailer login), so there's nothing extra to set up beyond the
+email settings above and publishing the current `database.rules.json`.

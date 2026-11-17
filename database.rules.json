@@ -30,8 +30,8 @@
         "picks": {
           "$week": {
             "$profile": {
-              ".write": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app') && root.child('access').child(auth.token.email.toLowerCase().replace('@pickem.app', '')).child('leagues').child($league).val() === true && $profile.toLowerCase() === auth.token.email.toLowerCase().replace('@pickem.app', '') && root.child('leagues').child($league).child('profiles').child($profile).exists()) || ((auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app') && !newData.exists())",
               "$game": {
+                ".write": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app') && root.child('access').child(auth.token.email.toLowerCase().replace('@pickem.app', '')).child('leagues').child($league).val() === true && $profile.toLowerCase() === auth.token.email.toLowerCase().replace('@pickem.app', '') && root.child('leagues').child($league).child('profiles').child($profile).exists() && (!root.child('kickoffs').child($week).child($game).exists() || root.child('kickoffs').child($week).child($game).val() > now)) || ((auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app') && !newData.exists())",
                 ".validate": "newData.isString() && newData.val().length <= 4 && $game.matches(/^[0-9]+$/)"
               }
             }
@@ -45,7 +45,8 @@
     "emails": {
       ".read": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app') || (auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app')",
       "$user": {
-        ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app'",
+        ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app') && auth.token.email.toLowerCase().replace('@pickem.app', '') === $user",
+        ".write": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app') || (auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app') && auth.token.email.toLowerCase().replace('@pickem.app', '') === $user)",
         ".validate": "newData.isString() && newData.val().length <= 254 && newData.val().matches(/^[^@ ]+@[^@ ]+[.][^@ ]+$/) && $user.matches(/^[a-z0-9_-]+$/)"
       }
     },
@@ -56,9 +57,46 @@
           "$kind": {
             "$user": {
               ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
-              ".validate": "newData.isNumber() && ($kind === 'done' || $kind === 'remind')"
+              ".validate": "newData.isNumber() && ($kind === 'done' || $kind === 'remind' || $kind === 'pushremind' || $kind.matches(/^g[0-9]+$/))"
             }
           }
+        }
+      }
+    },
+    "kickoffs": {
+      ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app')",
+      "$week": {
+        "$game": {
+          ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
+          ".validate": "newData.isNumber()"
+        }
+      }
+    },
+    "resets": {
+      ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
+      "$hash": {
+        ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
+        ".validate": "!newData.exists() || (newData.child('user').isString() && newData.child('exp').isNumber())"
+      }
+    },
+    "resetlog": {
+      "$user": {
+        ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
+        ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
+        ".validate": "newData.isNumber()"
+      }
+    },
+    "vapid": {
+      ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
+      ".write": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app') && !data.exists()"
+    },
+    "push": {
+      ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
+      "$user": {
+        ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app') && auth.token.email.toLowerCase().replace('@pickem.app', '') === $user",
+        "$sub": {
+          ".write": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app') && auth.token.email.toLowerCase().replace('@pickem.app', '') === $user) || ((auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app') && !newData.exists())",
+          ".validate": "newData.child('endpoint').isString() && newData.child('endpoint').val().beginsWith('https://') && newData.child('keys').child('p256dh').isString() && newData.child('keys').child('auth').isString()"
         }
       }
     }
