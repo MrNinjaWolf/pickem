@@ -24,8 +24,10 @@ username and password. `phone-app/config.js` can still hold them instead.
 
 ## Database rules
 
-`database.rules.json` must be pasted into Firebase by hand: **Build > Realtime Database > Rules**,
-replace everything, then **Publish**. Firebase does not read the copy in this repo.
+`database.rules.json` holds the database's security rules. Once `FIREBASE_SERVICE_ACCOUNT` is set up,
+install them from the app: **Admin tab > Database rules > Install the latest rules**. The Admin tab
+also says whether the installed rules are up to date. (Without the service account, paste the file
+into Firebase by hand: **Build > Realtime Database > Rules**, replace everything, then **Publish**.)
 
 ## Things to know
 
