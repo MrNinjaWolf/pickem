@@ -49,7 +49,7 @@ select{background:#fff;color:#000;flex:1 1 140px;min-width:0}
 .team .nm{font-size:11px;opacity:.85;text-align:center;line-height:1.15}
 .team .tag{font-size:11px;font-weight:800;letter-spacing:.08em;height:13px}
 .team .rec{font-size:13px;font-weight:700}
-.team .mini{font-size:10px;opacity:.8;text-align:center;line-height:1.2}
+.team .mini{font-size:10px;opacity:.8;text-align:center;line-height:1.2;min-height:24px}   /* room kept so cards don't grow when stats arrive */
 .wz{padding:4px 12px 48px}
 .wzhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;color:var(--muted);font-size:13px;margin:4px 2px 10px}
 .wzhead b{color:#fff;font-size:15px}
@@ -718,7 +718,7 @@ function teamBtn(g, side) {
 }
 function miniStats(g, t) {
   const d = summaryOf(g), st = d && d.stats[t.abbr];
-  if (!st || st.totalPointsPerGame === undefined) return '';
+  if (!st || st.totalPointsPerGame === undefined) return '<span class="mini"></span>';
   return `<span class="mini">Scores ${esc(st.totalPointsPerGame)}<br>Allows ${esc(st.totalPointsPerGameAllowed)}</span>`;
 }
 
@@ -810,7 +810,23 @@ function mid(g) {
   return `<div class="mid"><div class="sc">${sc}</div>${st}</div>`;
 }
 
+/** Where the game list is on screen, so a redraw can put the same game back in the same spot. */
+let tapped = null;                                   // the game just tapped in the list
+function listAnchor() {
+  const cards = [...document.querySelectorAll('#games .card')];
+  if (!cards.length || $('#picks').classList.contains('hide')) return null;
+  const pickedCard = tapped && cards.find(c => c.querySelector(`[data-g="${CSS.escape(tapped)}"]`));
+  const card = pickedCard || cards.find(c => c.getBoundingClientRect().bottom > 0);
+  if (!card) return null;
+  return {id: card.querySelector('[data-g]').dataset.g, top: card.getBoundingClientRect().top};
+}
+function restoreAnchor(a) {
+  if (!a) return;
+  const el = document.querySelector(`#games .card [data-g="${CSS.escape(a.id)}"]`);
+  if (el) window.scrollBy(0, el.closest('.card').getBoundingClientRect().top - a.top);
+}
 function renderPicks() {
+  const anchor = listAnchor(); tapped = null;
   if (!profile) {
     $('#summary').innerHTML = isAdmin() ? 'No names on the list yet. Tap <b>+ Add</b> to add one.' : 'No names on the list yet. Ask the administrator to add yours.';
     $('#games').innerHTML = ''; return;
@@ -830,6 +846,7 @@ function renderPicks() {
     ? clearBtn() + (left ? `<button type="button" class="btn more" data-act="resume">Pick the ${left} remaining game${left === 1 ? '' : 's'} one at a time</button>` : '') +
       games.map(g => `<div class="card">${teamBtn(g, 'away')}${mid(g)}${teamBtn(g, 'home')}</div>`).join('')
     : '<div class="empty">No games to show for this week.</div>';
+  restoreAnchor(anchor);
 }
 
 function renderScore() {
@@ -968,6 +985,7 @@ $('#games').addEventListener('click', e => {
   const b = e.target.closest('.team, .wzteam');
   if (!b) return;
   const wizard = b.classList.contains('wzteam');
+  if (!wizard) { listMode = true; tapped = b.dataset.g; }      // stay on the list, with this game where it was
   pick(b.dataset.g, b.dataset.t);
   if (wizard && picks[pk(profile, b.dataset.g)] === b.dataset.t) { toast('Picked ' + b.dataset.t); window.scrollTo(0, 0); }
 });
