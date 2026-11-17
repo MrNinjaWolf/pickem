@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "type": "module",
+  "description": "Only used by the Netlify functions that send reminder emails. The web app itself has no build step.",
+  "dependencies": {
+    "nodemailer": "7.0.13"
+  }
+}

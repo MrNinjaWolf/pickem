@@ -219,6 +219,8 @@ dialog p b{color:var(--text)}
 .plist .av{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#4f8cff,#7c3aed);font-size:12px;font-weight:800;flex:none}
 .plist .nm{flex:1;font-weight:700;overflow:hidden;text-overflow:ellipsis}
 .plist .you{font-size:11px;color:var(--muted);font-weight:600}
+.plist input{flex:1.5;min-width:0;padding:8px 10px;font-size:14px;border-radius:10px}
+.plist input.saved{border-color:rgba(52,211,153,.6)}
 .plist .x{border:0;background:rgba(248,113,113,.12);color:var(--bad);width:32px;height:32px;border-radius:10px;font-size:16px;flex:none}
 #admbox .btn.full{width:100%;margin-top:14px}
 #toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));transform:translate(-50%,24px) scale(.96);background:rgba(15,23,42,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);color:#fff;padding:11px 18px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .25s,transform .35s var(--spring);z-index:30;max-width:90vw;text-align:center;box-shadow:var(--shadow)}
@@ -335,6 +337,14 @@ dialog p b{color:var(--text)}
           <input id="nupass" type="text" style="width:100%" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false">
           <button class="btn full" id="nubtn" type="button">Create login</button>
           <div class="err" id="nuerr"></div>
+        </div>
+        <div class="wzbox">
+          <h3 style="margin:0">Email reminders</h3>
+          <p style="margin:4px 0 0;color:var(--muted);font-size:13px">Players with an email get a message when a week's games are all final, and a reminder 2 hours before the next week's first kickoff if they still have picks to make.</p>
+          <ul class="plist" id="elist"></ul>
+          <button class="btn alt full" id="testmail" type="button">Send a test email to me</button>
+          <div class="err" id="mailmsg"></div>
+          <p id="maillast" style="margin:6px 0 0;color:var(--muted);font-size:12px"></p>
         </div>
       </div>
     </section>
@@ -862,6 +872,56 @@ function setPeriod(i, dir) {
   const m = $('#wkmid'); m.classList.remove('slide-l', 'slide-r'); void m.offsetWidth; m.classList.add(dir > 0 ? 'slide-l' : 'slide-r');
   render(); setStatus('Loading ' + period.label + '\u2026'); loadGames(false);
 }
+// ---------------------------------------------------------------- administrator: reminder emails
+let emails = {};                                     // username -> address (only the administrator can read these)
+async function loadEmails() {
+  try { emails = (await dbCall('GET', cfg.url + '/emails')) || {}; } catch (e) { emails = null; }
+  renderEmails();
+}
+function renderEmails() {
+  const box = $('#elist');
+  if (!isAdmin() || box.contains(document.activeElement)) return;      // don't redraw while typing
+  if (emails === null) { box.innerHTML = '<li style="color:var(--muted)">Couldn\'t load emails. Publish the latest database rules, then reopen this tab.</li>'; return; }
+  box.innerHTML = profiles.length ? profiles.map(p => {
+    const u = p.toLowerCase(), ok = /^[a-z0-9_-]+$/.test(u);
+    return `<li><span class="av">${esc(p.charAt(0).toUpperCase())}</span><span class="nm">${esc(p)}</span>` +
+      `<input type="email" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" data-email="${esc(u)}" value="${esc(emails[u] || '')}" ` +
+      `placeholder="${ok ? 'name@example.com' : 'not a username'}"${ok ? '' : ' disabled'} aria-label="Email for ${esc(p)}"></li>`;
+  }).join('') : '<li style="color:var(--muted)">Add players first.</li>';
+}
+async function saveEmail(input) {
+  const u = input.dataset.email, v = input.value.trim();
+  if (v && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) { toast("That email address doesn't look right"); return; }
+  if ((emails || {})[u] === v || (!v && !(emails || {})[u])) return;
+  try {
+    await dbCall(v ? 'PUT' : 'DELETE', cfg.url + '/emails/' + encodeURIComponent(u), v || undefined);
+    if (emails) { if (v) emails[u] = v; else delete emails[u]; }
+    input.classList.add('saved'); toast(v ? 'Email saved' : 'Email removed');
+  } catch (e) { toast(friendly(e)); }
+}
+const periodName = key => { const [, t, w] = key.split('-').map(Number); const p = PERIODS.find(x => x.type === t && x.week === w); return p ? p.label : key; };
+async function loadMailLog() {
+  try {
+    const sent = (await dbCall('GET', cfg.url + '/mail/sent')) || {}, items = [];
+    for (const [wkey, kinds] of Object.entries(sent))
+      for (const [kind, who] of Object.entries(kinds || {})) { const t = Object.values(who || {}); items.push({wkey, kind, n: t.length, t: Math.max(...t)}); }
+    items.sort((a, b) => b.t - a.t);
+    $('#maillast').textContent = items.length ? 'Last sent: ' + items.slice(0, 3).map(i => `${periodName(i.wkey)} ${i.kind === 'done' ? 'results' : 'reminder'} to ${i.n} ` +
+      `(${new Date(i.t).toLocaleString([], {month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'})})`).join(' \u2022 ') : 'No reminder emails have been sent yet.';
+  } catch (e) { $('#maillast').textContent = ''; }
+}
+async function sendTestEmail() {
+  const b = $('#testmail'), m = $('#mailmsg');
+  b.disabled = true; m.style.color = 'var(--muted)'; m.textContent = 'Sending\u2026';
+  try {
+    const r = await fetch('/api/test-email', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({idToken: await idToken()})});
+    const j = await r.json().catch(() => ({error: `The email service isn't deployed yet (HTTP ${r.status}).`}));
+    if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status);
+    m.style.color = 'var(--green)'; m.textContent = `Sent to ${j.to}. Check that inbox (and its spam folder).`;
+  } catch (e) { m.style.color = ''; m.textContent = e.message; }
+  b.disabled = false;
+}
+
 /** Administrator page: the players on this database. */
 function renderAdmin() {
   if (!isAdmin()) return;
@@ -870,6 +930,7 @@ function renderAdmin() {
     `<li style="animation-delay:${i * 30}ms"><span class="av">${esc(p.charAt(0).toUpperCase())}</span><span class="nm">${esc(p)}${mine(p) ? ' <span class="you">(you)</span>' : ''}</span>` +
     `<button type="button" class="x" data-del="${esc(p)}" aria-label="Remove ${esc(p)}">&times;</button></li>`).join('')
     : '<li style="color:var(--muted)">No players yet.</li>';
+  renderEmails();
 }
 
 function teamBtn(g, side) {
@@ -1168,7 +1229,7 @@ function showTab(t) {
   }
   moveTabIndicator();
   if (t === 'stand') loadSeason(false);
-  if (t === 'admin') renderAdmin();
+  if (t === 'admin') { renderAdmin(); loadEmails(); loadMailLog(); }
 }
 function moveTabIndicator() {
   const vis = TABS.filter(n => !$('#t-' + n).classList.contains('hide')), i = Math.max(0, vis.findIndex(n => $('#t-' + n).classList.contains('on')));
@@ -1209,6 +1270,9 @@ $('#wknext').onclick = () => setPeriod(PERIODS.indexOf(period) + 1, 1);
 $('#t-admin').onclick = () => showTab('admin');
 $('#paddbtn').onclick = () => { if (addProfile($('#padd').value)) $('#padd').value = ''; };
 $('#padd').addEventListener('keydown', e => { if (e.key === 'Enter') $('#paddbtn').click(); });
+$('#elist').addEventListener('change', e => { const i = e.target.closest('[data-email]'); if (i) saveEmail(i); });
+$('#elist').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('[data-email]')) e.target.blur(); });
+$('#testmail').onclick = sendTestEmail;
 $('#plist').addEventListener('click', e => { const b = e.target.closest('[data-del]'); if (b) deleteProfile(b.dataset.del); });
 $('#refresh').onclick = () => {
   const r = $('#refresh'); r.classList.add('spin');
