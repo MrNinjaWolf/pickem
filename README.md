@@ -66,3 +66,19 @@ the Admin tab. Only the player, `dakota` and the mailer login can read an addres
 
 Scheduled functions only run on the live site, not on deploy previews. Netlify's *Logs > Functions* page
 shows each run.
+
+## Password resets (one-time setup)
+
+- **Forgot password?** on the login screen emails a one-hour reset link to the player's saved address.
+- On the **Admin** tab, the key button next to a player lets `dakota` set a new password for them.
+
+Both need administrator access to Firebase Authentication:
+
+1. In Firebase, open *Project settings > Service accounts* and tap **Generate new private key**. A
+   `.json` file downloads.
+2. Open that file, copy **all** of its text, and paste it into a new Netlify environment variable named
+   `FIREBASE_SERVICE_ACCOUNT`. Then redeploy.
+3. Publish the current `database.rules.json`.
+
+Keep that file private: anyone who has it can manage your Firebase project. Delete the download once
+it's in Netlify.

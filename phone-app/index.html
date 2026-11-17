@@ -331,6 +331,7 @@ dialog p b{color:var(--text)}
 .plist .you{font-size:11px;color:var(--muted);font-weight:600}
 .plist input{flex:1.5;min-width:0;padding:8px 10px;font-size:14px;border-radius:10px}
 .plist input.saved{border-color:rgba(52,211,153,.6)}
+.plist .x.key{background:rgba(255,197,61,.12);font-size:14px}
 .plist .x{border:0;background:rgba(248,113,113,.12);color:var(--bad);width:32px;height:32px;border-radius:10px;font-size:16px;flex:none}
 #admbox .btn.full{width:100%;margin-top:14px}
 #toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));transform:translate(-50%,24px) scale(.96);background:rgba(15,23,42,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);color:#fff;padding:11px 18px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .25s,transform .35s var(--spring);z-index:30;max-width:90vw;text-align:center;box-shadow:var(--shadow)}
@@ -392,6 +393,23 @@ dialog p b{color:var(--text)}
     <input id="lgpass" type="password" autocomplete="current-password">
     <div class="err" id="loginerr"></div>
     <button class="btn" id="lgbtn" type="button">Log in</button>
+    <div style="text-align:center;margin-top:12px"><button class="linkbtn" id="forgotbtn" type="button">Forgot password?</button></div>
+    <div id="forgot" class="hide pfform" style="margin-top:6px;padding-top:12px;border-top:1px solid var(--line)">
+      <p style="margin:0">Enter your username and we'll email a reset link to the address on your account.</p>
+      <div class="addrow"><input id="fguser" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Username" placeholder="Username"><button class="btn" id="fgbtn" type="button">Send link</button></div>
+      <div class="err" id="fgmsg"></div>
+    </div>
+  </div>
+</section>
+
+<section id="resetpw" class="login hide">
+  <div class="cardbox pfform">
+    <h2>Choose a new password</h2>
+    <p>Enter a new password for your account (at least 6 characters).</p>
+    <label for="rpnew">New password</label><input id="rpnew" type="password" autocomplete="new-password">
+    <label for="rpnew2">New password again</label><input id="rpnew2" type="password" autocomplete="new-password">
+    <div class="err" id="rpmsg"></div>
+    <button class="btn" id="rpbtn" type="button">Save new password</button>
   </div>
 </section>
 
@@ -693,8 +711,8 @@ function pull() {
 // ---------------------------------------------------------------- screens, sessions, access
 function showScreen(s) {
   screen = s;
-  ['login', 'noaccess', 'needemail', 'app'].forEach(n => $('#' + n).classList.toggle('hide', n !== s));
-  $('#hdrright').classList.toggle('hide', s === 'login');
+  ['login', 'noaccess', 'needemail', 'resetpw', 'app'].forEach(n => $('#' + n).classList.toggle('hide', n !== s));
+  $('#hdrright').classList.toggle('hide', s === 'login' || s === 'resetpw');
   $('#appnav').classList.toggle('hide', s !== 'app');
 }
 /** The database URL and API key come from config.js, else from the site's Netlify settings (/api/config),
@@ -731,7 +749,7 @@ function logout(msg) {
   showScreen('login');
 }
 async function doLogin() {
-  const err = m => { $('#loginerr').textContent = m; };
+  const err = m => { $('#loginerr').classList.remove('ok'); $('#loginerr').textContent = m; };
   const u = $('#lguser').value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, ''), p = $('#lgpass').value;
   if (!u || !p) { err('Enter your username and password.'); return; }
   if (!(cfg.url && cfg.key) && !(await ensureConfig())) { err("Can't reach the server. Check your connection and try again."); return; }
@@ -1076,6 +1094,7 @@ function renderAdmin() {
   $('#nulg').textContent = league; $('#nulg2').textContent = league;
   $('#plist').innerHTML = profiles.length ? profiles.map((p, i) =>
     `<li style="animation-delay:${i * 30}ms"><span class="av">${esc(p.charAt(0).toUpperCase())}</span><span class="nm">${esc(p)}${mine(p) ? ' <span class="you">(you)</span>' : ''}</span>` +
+    (/^[a-z0-9_-]+$/.test(p.toLowerCase()) && !mine(p) ? `<button type="button" class="x key" data-pw="${esc(p)}" aria-label="Reset password for ${esc(p)}" title="Reset password">&#128273;</button>` : '') +
     `<button type="button" class="x" data-del="${esc(p)}" aria-label="Remove ${esc(p)}">&times;</button></li>`).join('')
     : '<li style="color:var(--muted)">No players yet.</li>';
   renderEmails();
@@ -1656,6 +1675,47 @@ async function submitNeedEmail() {
   catch (e) { m.textContent = e instanceof AuthError || e.status ? friendly(e) : e.message; }
   $('#nebtn').disabled = false;
 }
+// ---------------------------------------------------------------- forgotten passwords
+async function api(path, body) {
+  const r = await fetch(path, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+  const j = await r.json().catch(() => ({error: `The server isn't set up for this yet (HTTP ${r.status}).`}));
+  if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status);
+  return j;
+}
+async function requestReset() {
+  const m = $('#fgmsg'), u = $('#fguser').value.trim().toLowerCase();
+  m.classList.remove('ok');
+  if (!u) { m.textContent = 'Enter your username.'; return; }
+  $('#fgbtn').disabled = true; m.textContent = 'Sending…';
+  try { const j = await api('/api/reset-request', {username: u}); m.classList.add('ok'); m.textContent = j.message; }
+  catch (e) { m.textContent = e.message; }
+  $('#fgbtn').disabled = false;
+}
+const resetToken = new URLSearchParams(location.search).get('reset');
+async function finishReset() {
+  const m = $('#rpmsg'), p = $('#rpnew').value;
+  if (p.length < 6) { m.textContent = 'The new password needs at least 6 characters.'; return; }
+  if (p !== $('#rpnew2').value) { m.textContent = "The passwords don't match."; return; }
+  $('#rpbtn').disabled = true; m.textContent = 'Saving…';
+  try {
+    const j = await api('/api/reset', {token: resetToken, password: p});
+    history.replaceState(null, '', location.pathname);
+    auth = null; setLS('auth', null);
+    fillLoginFields(); $('#lguser').value = j.user || '';
+    showScreen('login');
+    $('#loginerr').classList.add('ok'); $('#loginerr').textContent = 'Password changed. Log in with your new password.';
+  } catch (e) { m.textContent = e.message; }
+  $('#rpbtn').disabled = false;
+}
+async function adminResetPassword(name) {
+  const u = name.toLowerCase();
+  const p = prompt(`New password for ${u} (at least 6 characters):`);
+  if (p === null) return;
+  if (p.length < 6) { toast('The password needs at least 6 characters'); return; }
+  try { await api('/api/admin-password', {idToken: await idToken(), user: u, password: p}); toast(`Password changed for ${u}`); }
+  catch (e) { toast(e.message); }
+}
+
 let lastTab = 'picks';
 async function openProfile() {
   const me = myProfile() || (auth ? auth.user : '');
@@ -1732,7 +1792,14 @@ $('#padd').addEventListener('keydown', e => { if (e.key === 'Enter') $('#paddbtn
 $('#elist').addEventListener('change', e => { const i = e.target.closest('[data-email]'); if (i) saveEmail(i); });
 $('#elist').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('[data-email]')) e.target.blur(); });
 $('#testmail').onclick = sendTestEmail;
-$('#plist').addEventListener('click', e => { const b = e.target.closest('[data-del]'); if (b) deleteProfile(b.dataset.del); });
+$('#plist').addEventListener('click', e => {
+  const k = e.target.closest('[data-pw]'); if (k) { adminResetPassword(k.dataset.pw); return; }
+  const b = e.target.closest('[data-del]'); if (b) deleteProfile(b.dataset.del);
+});
+$('#forgotbtn').onclick = () => { const f = $('#forgot'); f.classList.toggle('hide'); if (!f.classList.contains('hide')) { $('#fguser').value = $('#lguser').value; $('#fguser').focus(); } };
+$('#fgbtn').onclick = requestReset;
+$('#fguser').addEventListener('keydown', e => { if (e.key === 'Enter') requestReset(); });
+$('#rpbtn').onclick = finishReset;
 $('#refresh').onclick = () => {
   const r = $('#refresh'); r.classList.add('spin');
   Promise.all([loadGames(false), pull()]).finally(() => setTimeout(() => r.classList.remove('spin'), 300));
@@ -1787,6 +1854,7 @@ setInterval(() => {                                   // live scores: every 20 s
   try { if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) { /* not supported */ }
   pruneSummaries();
   fillLoginFields();
+  if (resetToken) { showScreen('resetpw'); ensureConfig(); return; }   // opened from a password reset email
   await ensureConfig();
   if (auth && auth.refresh && cfg.url && cfg.key) {
     try { leagues = await fetchLeagues(); setLS('leagues', leagues); }

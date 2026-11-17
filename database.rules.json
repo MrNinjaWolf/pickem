@@ -71,6 +71,20 @@
           ".validate": "newData.isNumber()"
         }
       }
+    },
+    "resets": {
+      ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
+      "$hash": {
+        ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
+        ".validate": "!newData.exists() || (newData.child('user').isString() && newData.child('exp').isNumber())"
+      }
+    },
+    "resetlog": {
+      "$user": {
+        ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
+        ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
+        ".validate": "newData.isNumber()"
+      }
     }
   }
 }

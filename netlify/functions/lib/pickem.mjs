@@ -18,7 +18,7 @@ export const missingSettings = () => REQUIRED.filter(k => !E(k));
 const ESPN = () => E('ESPN_BASE') || 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
 const AUTH = () => E('PICKEM_AUTH_BASE') || 'https://identitytoolkit.googleapis.com';
 const now = () => E('PICKEM_NOW') ? Date.parse(E('PICKEM_NOW')) : Date.now();
-const appUrl = () => E('APP_URL') || E('URL') || 'https://dak-nfl.netlify.app';
+export const appUrl = () => E('APP_URL') || E('URL') || 'https://dak-nfl.netlify.app';
 
 export const PERIODS = Array.from({length: 18}, (_, i) => ({label: 'Week ' + (i + 1), type: 2, week: i + 1})).concat([
   {label: 'Wild Card', type: 3, week: 1}, {label: 'Divisional', type: 3, week: 2},
