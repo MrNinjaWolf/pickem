@@ -3,6 +3,7 @@
     ".read": false,
     ".write": false,
     "access": {
+      ".read": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app') || (auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app')",
       "$user": {
         ".read": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app') && auth.token.email.toLowerCase().replace('@pickem.app', '') === $user) || (auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app')",
         ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app'",
@@ -17,6 +18,7 @@
       }
     },
     "leagues": {
+      ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
       "$league": {
         ".read": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app') && root.child('access').child(auth.token.email.toLowerCase().replace('@pickem.app', '')).child('leagues').child($league).val() === true) || (auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app')",
         "profiles": {
@@ -37,6 +39,26 @@
         },
         "$other": {
           ".validate": false
+        }
+      }
+    },
+    "emails": {
+      ".read": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app') || (auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app')",
+      "$user": {
+        ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app'",
+        ".validate": "newData.isString() && newData.val().length <= 254 && newData.val().matches(/^[^@ ]+@[^@ ]+[.][^@ ]+$/) && $user.matches(/^[a-z0-9_-]+$/)"
+      }
+    },
+    "mail": {
+      ".read": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app') || (auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app')",
+      "sent": {
+        "$week": {
+          "$kind": {
+            "$user": {
+              ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
+              ".validate": "newData.isNumber() && ($kind === 'done' || $kind === 'remind')"
+            }
+          }
         }
       }
     }

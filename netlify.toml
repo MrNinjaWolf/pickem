@@ -2,3 +2,9 @@
 # database.rules.json) stay in the repo but never go on the website.
 [build]
   publish = "phone-app"
+
+# Reminder emails: a scheduled job plus a "send test email" endpoint.
+# They need environment variables set in Netlify (see README.md).
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
