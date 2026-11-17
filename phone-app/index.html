@@ -239,6 +239,57 @@ td.neg{color:var(--bad)}
 .splay small{display:block;color:var(--muted);font-size:11px}
 .splay .ss{font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
 
+/* ---------- odds, injuries */
+.odds{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+.odds span{padding:6px 12px;border-radius:999px;background:var(--surface2);font-size:13px;font-weight:700}
+.odds small{display:block;text-align:center;color:var(--muted);font-size:11px;margin-top:6px;width:100%}
+.inj{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:12px}
+.inj .col{display:flex;flex-direction:column;gap:5px}
+.inj .col.r{text-align:right}
+.inj b{font-size:12px}
+.inj .st{display:inline-block;margin:0;font-size:10px;font-weight:800;padding:1px 6px;border-radius:6px;background:var(--surface2);color:var(--muted)}
+.inj .st.o{background:rgba(248,113,113,.16);color:var(--bad)}
+.inj .st.d{background:rgba(251,146,60,.16);color:#fb923c}
+.inj .st.q{background:rgba(255,197,61,.14);color:var(--gold)}
+
+/* ---------- play-by-play */
+.drv{border-bottom:1px solid var(--line)}
+.drv:last-child{border-bottom:0}
+.drv summary{list-style:none;display:grid;grid-template-columns:24px 1fr auto;gap:10px;align-items:center;padding:9px 0;margin:0;color:var(--text);font-size:13px}
+.drv summary::-webkit-details-marker{display:none}
+.drv summary img{width:22px;height:22px;object-fit:contain}
+.drv summary small{display:block;color:var(--muted);font-size:11px}
+.drv summary .res{font-weight:800;font-size:12px;white-space:nowrap}
+.drv summary .res.sc{color:var(--green)}
+.drv summary .res.to{color:var(--bad)}
+.drv[open] summary .chev{transform:rotate(90deg)}
+.drv .chev{display:inline-block;color:var(--muted);transition:transform .2s var(--ease);margin-left:6px}
+.pplay{padding:7px 0 7px 34px;border-top:1px dashed var(--line);font-size:13px;line-height:1.35;color:var(--text)}
+.pplay small{display:block;color:var(--muted);font-size:11px;margin-bottom:2px}
+.pplay.sc{color:var(--green)}
+.pplay.to{color:var(--bad)}
+.drv.cur summary .res{color:var(--gold)}
+
+/* ---------- season stats */
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.tile{background:var(--surface2);border-radius:14px;padding:10px 12px}
+.tile b{display:block;font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.tile span{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.wkchart svg{display:block;width:100%;height:auto;overflow:visible}
+.wkchart .bar{fill:#4f8cff;transition:opacity .2s}
+.wkchart .bar.on{fill:#7aa8ff}
+.wkchart .hit{fill:transparent;cursor:pointer}
+.wkchart text{fill:var(--muted);font-size:10px;font-family:inherit}
+.wkchart .grid{stroke:var(--line);stroke-width:1}
+.wkcap{min-height:18px;text-align:center;font-size:12px;color:var(--muted);margin-top:6px}
+.wkcap b{color:var(--text)}
+.tlist{display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px}
+.tlist h5{margin:0 0 6px;font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.tlist div.t{display:flex;align-items:center;gap:8px;padding:4px 0}
+.tlist img{width:22px;height:22px;object-fit:contain}
+.tlist .rec{margin-left:auto;font-weight:800;font-variant-numeric:tabular-nums}
+#mystats{padding:0 12px 56px}
+
 /* ---------- profile */
 .profhead{display:flex;align-items:center;gap:14px}
 .av.big{display:grid;place-items:center;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#4f8cff,#7c3aed);font-size:24px;font-weight:800;flex:none}
@@ -384,6 +435,7 @@ dialog p b{color:var(--text)}
       <div id="sttitle"></div>
       <div id="stnote"></div>
       <div class="tw"><table id="sttable"></table></div>
+      <div id="mystats"></div>
     </section>
     <section id="live" class="view hide">
       <div id="livebox"></div>
@@ -823,6 +875,13 @@ function readSummary(j) {
     d.last5[t.team.abbreviation] = [...(t.events || [])].sort((a, b) => String(a.gameDate).localeCompare(String(b.gameDate))).map(e => e.gameResult).filter(Boolean);
   const pr = j.predictor;
   if (pr && pr.homeTeam && pr.awayTeam) d.prob = {home: +pr.homeTeam.gameProjection || 0, away: +pr.awayTeam.gameProjection || 0};
+  const pc = (j.pickcenter || [])[0];
+  if (pc && (pc.details || pc.overUnder)) d.odds = {line: pc.details || '', ou: pc.overUnder || '', by: (pc.provider && pc.provider.name) || ''};
+  const RANK = {Out: 0, 'Injured Reserve': 0, Doubtful: 1, Questionable: 2};
+  d.inj = {};
+  for (const t of j.injuries || []) d.inj[t.team.abbreviation] = (t.injuries || [])
+    .map(i => ({st: i.status || '', who: (i.athlete || {}).displayName || '', pos: (((i.athlete || {}).position) || {}).abbreviation || '', what: ((i.details || {}).type) || ''}))
+    .filter(i => i.who && i.st in RANK).sort((a, b) => RANK[a.st] - RANK[b.st]).slice(0, 5);
   return d;
 }
 const summaryOf = g => { const c = LS('sum.' + g.id); return c && c.d; };
@@ -1099,6 +1158,18 @@ function leadersBox(g, d) {
   }).join('');
   return rows ? `<div class="wzbox"><h4>Season leaders</h4><div class="cmp ld">${rows}</div></div>` : '';
 }
+function oddsBox(g, d) {
+  if (!d.odds) return '';
+  return `<div class="wzbox"><h4>Betting line</h4><div class="odds">${d.odds.line ? `<span>${esc(d.odds.line)}</span>` : ''}` +
+    `${d.odds.ou ? `<span>O/U ${esc(d.odds.ou)}</span>` : ''}${d.odds.by ? `<small>${esc(d.odds.by)}</small>` : ''}</div></div>`;
+}
+function injuryBox(g, d) {
+  const a = (d.inj || {})[g.away.abbr] || [], h = (d.inj || {})[g.home.abbr] || [];
+  if (!a.length && !h.length) return '';
+  const cls = st => st === 'Questionable' ? 'q' : st === 'Doubtful' ? 'd' : 'o';
+  const col = (list, r) => `<div class="col${r ? ' r' : ''}">${list.map(i => `<div><b>${esc(i.who)}</b> ${esc(i.pos)}<br><span class="st ${cls(i.st)}">${esc(i.st)}</span> ${esc(i.what)}</div>`).join('') || '<div class="muted">None listed</div>'}</div>`;
+  return `<div class="wzbox"><h4>Injury report</h4><div class="inj">${col(a, false)}${col(h, true)}</div></div>`;
+}
 function formBox(g, d) {
   const dots = abbr => (d.last5[abbr] || []).map(r => `<span class="${r === 'W' ? 'w' : r === 'L' ? 'x' : ''}">${esc(r)}</span>`).join(' ') || '–';
   let out = '';
@@ -1122,7 +1193,7 @@ function renderWizard(list) {
   $('#games').innerHTML = `<div class="wz${fresh ? ' enter' : ''}">${clearBtn()}<div class="wzhead"><b>Pick ${done + 1} of ${total}</b><span>${kickoff(g)}</span></div>` +
     `<div class="wzbar"><span style="width:${total ? done / total * 100 : 0}%"></span></div>` +
     `<div class="wzteams">${wzTeam(g, 'away')}<div class="wzat">@</div>${wzTeam(g, 'home')}</div>` +
-    (d ? compareBox(g, d) + leadersBox(g, d) + formBox(g, d)
+    (d ? oddsBox(g, d) + compareBox(g, d) + leadersBox(g, d) + injuryBox(g, d) + formBox(g, d)
        : sumFail.has(g.id) ? `<div class="wzwait">Couldn't load stats from ESPN. Records are still shown above.</div>` : `<div class="wzwait loading">Loading stats\u2026</div>`) +
     `<div class="wzfoot"><button type="button" class="btn alt" data-act="skip" data-g="${esc(g.id)}">Skip for now</button>` +
     `<button type="button" class="btn alt" data-act="all">Show all games</button></div></div>`;
@@ -1284,9 +1355,69 @@ function renderStandings() {
   $('#sttable').innerHTML = '<tr><th>Player</th><th>Pct</th><th>+/\u2212</th><th>Correct</th><th>Wrong</th><th>Weeks Won</th>' +
     weeks.map(k => `<th>${esc(weekLabel(k))}</th>`).join('') + '</tr>' + rows.join('');
   $('#sttitle').textContent = `${season} Season \u2014 ${finals} week${finals === 1 ? '' : 's'} complete`;
+  renderMyStats(weeks);
   if (!seasonBusy) $('#stnote').textContent = weeks.length
     ? 'Ranked by Pct, then +/\u2212 (each pick adds the margin its team won by, or subtracts the margin it lost by), then total correct. Weekly columns show correct picks.'
     : 'Make some picks and the standings will build here.';
+}
+
+/** "Your season": weekly correct picks as a bar chart, streaks, and the teams you pick best and worst. */
+function renderMyStats(weeks) {
+  const me = myProfile(), box = $('#mystats');
+  if (!me || !weeks.length) { box.innerHTML = ''; return; }
+  const perWeek = [], seq = [], teams = {};
+  let c = 0, l = 0;
+  for (const key of weeks) {
+    const list = key === wk() ? games : (LS('games.' + key) || []);
+    let wc = 0, wl = 0;
+    for (const g of [...list].sort(byDate)) {
+      const p = picks[`${me}|${key}|${g.id}`];
+      if (!p || g.state !== 'post') continue;
+      const w = winner(g); if (w === 'TIE') continue;
+      const right = p === w, t = g.away.abbr === p ? g.away : g.home;
+      if (right) { wc++; c++; } else { wl++; l++; }
+      seq.push(right);
+      const e = teams[p] || (teams[p] = {abbr: p, logo: t.logo, c: 0, l: 0}); if (right) e.c++; else e.l++;
+    }
+    perWeek.push({key, label: weekLabel(key), c: wc, n: wc + wl});
+  }
+  if (!c && !l) { box.innerHTML = ''; return; }
+  let cur = 0, best = 0, run = 0;
+  for (const r of seq) { run = r ? run + 1 : 0; best = Math.max(best, run); }
+  for (let i = seq.length - 1; i >= 0 && seq[i] === seq[seq.length - 1]; i--) cur++;
+  const curTxt = seq[seq.length - 1] ? `${cur} right` : `${cur} wrong`;
+  // bar chart: one series, so no legend; values on tap
+  const W = 320, Hh = 120, pad = 18, max = Math.max(1, ...perWeek.map(w => w.n)), bw = Math.min(26, (W - 8) / perWeek.length - 2);
+  const x = i => 4 + i * ((W - 8) / perWeek.length) + ((W - 8) / perWeek.length - bw) / 2, y = v => Hh - pad - (v / max) * (Hh - pad - 8);
+  const top = perWeek.reduce((a, b) => (b.c > a.c ? b : a), perWeek[0]);
+  const bars = perWeek.map((w, i) => {
+    const h = Math.max(0, y(0) - y(w.c)), r = Math.min(4, h / 2, bw / 2);
+    const path = h > 0 ? `M${x(i)},${y(0)} V${y(w.c) + r} Q${x(i)},${y(w.c)} ${x(i) + r},${y(w.c)} H${x(i) + bw - r} Q${x(i) + bw},${y(w.c)} ${x(i) + bw},${y(w.c) + r} V${y(0)} Z` : '';
+    return `<g data-wk="${i}">${path ? `<path class="bar" d="${path}"><title>${esc(w.label)}: ${w.c} of ${w.n} correct</title></path>` : ''}` +
+      `<rect class="hit" x="${x(i) - 1}" y="0" width="${bw + 2}" height="${Hh}"></rect>` +
+      `<text x="${x(i) + bw / 2}" y="${Hh - 4}" text-anchor="middle">${esc(w.label)}</text>` +
+      (w === top && w.c ? `<text x="${x(i) + bw / 2}" y="${y(w.c) - 4}" text-anchor="middle" style="fill:var(--text);font-weight:700">${w.c}</text>` : '') + '</g>';
+  }).join('');
+  let ranked = Object.values(teams).filter(t => t.c + t.l >= 2);
+  if (ranked.length < 3) ranked = Object.values(teams);              // early in the season, use every team picked
+  const pct = t => t.c / (t.c + t.l);
+  const bestT = [...ranked].sort((a, b) => pct(b) - pct(a) || b.c - a.c).slice(0, 3);
+  const worstT = [...ranked].sort((a, b) => pct(a) - pct(b) || b.l - a.l).filter(t => !bestT.includes(t)).slice(0, 3);
+  const trow = t => `<div class="t">${t.logo ? `<img src="${esc(t.logo)}" alt="">` : ''}<b>${esc(t.abbr)}</b><span class="rec">${t.c}-${t.l}</span></div>`;
+  box.innerHTML = `<div class="wzbox"><h4>Your season</h4><div class="tiles">` +
+    `<div class="tile"><span>Record</span><b>${c}-${l}</b></div><div class="tile"><span>Pct</span><b>${(c / (c + l)).toFixed(3).replace(/^0/, '')}</b></div>` +
+    `<div class="tile"><span>Current streak</span><b>${esc(curTxt)}</b></div><div class="tile"><span>Best streak</span><b>${best} right</b></div></div></div>` +
+    `<div class="wzbox"><h4>Correct picks by week</h4><div class="wkchart"><svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Correct picks by week">` +
+    `<line class="grid" x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}"></line>${bars}</svg></div>` +
+    `<div class="wkcap" id="wkcap">Tap a week for its result.</div></div>` +
+    (ranked.length ? `<div class="wzbox"><h4>Teams you pick</h4><div class="tlist"><div><h5>Best</h5>${bestT.map(trow).join('')}</div>` +
+      `<div><h5>Worst</h5>${worstT.map(trow).join('') || '<div class="muted">Not enough picks yet</div>'}</div></div></div>` : '');
+  box.querySelectorAll('[data-wk]').forEach(gEl => gEl.addEventListener('click', () => {
+    const w = perWeek[+gEl.dataset.wk];
+    box.querySelectorAll('.bar').forEach(b => b.classList.remove('on'));
+    const b = gEl.querySelector('.bar'); if (b) b.classList.add('on');
+    $('#wkcap').innerHTML = `<b>${esc(w.label)}</b>: ${w.c} of ${w.n} correct`;
+  }));
 }
 
 /** Loads results for earlier weeks that have picks but are not fully final in the saved copy. */
@@ -1404,7 +1535,27 @@ function readGameSummary(j) {
   if (wp.length) d.prob = wp[wp.length - 1].homeWinPercentage;
   const cur = j.drives && j.drives.current;
   if (cur) d.drive = `${((cur.team || {}).abbreviation) || ''} drive: ${cur.description || ''}`;
+  const drive = (x, current) => ({
+    id: String(x.id || ''), current, team: ((x.team || {}).abbreviation) || '', logo: ((((x.team || {}).logos) || [])[0] || {}).href || '',
+    result: x.displayResult || (current ? 'In progress' : ''), desc: x.description || '', score: !!x.isScore,
+    plays: (x.plays || []).map(p => ({q: (p.period || {}).number, clock: (p.clock || {}).displayValue || '', dd: ((p.start || {}).downDistanceText) || '',
+      text: p.text || '', sc: !!p.scoringPlay, to: !!p.isTurnover})).filter(p => p.text)});
+  d.drives = [...(cur ? [drive(cur, true)] : []), ...(((j.drives || {}).previous) || []).slice().reverse().filter(x => !cur || x.id !== cur.id).map(x => drive(x, false))];
   return d;
+}
+const openDrives = new Set();                        // drives expanded on the game page
+function pbpBox(d) {
+  if (!d.drives || !d.drives.length) return '';
+  const plays = list => list.slice().reverse().map(p => `<div class="pplay${p.sc ? ' sc' : p.to ? ' to' : ''}" data-pid="${esc(p.q + p.clock + p.text.slice(0, 24))}">` +
+    `<small>Q${esc(p.q)} \u2022 ${esc(p.clock)}${p.dd ? ' \u2022 ' + esc(p.dd) : ''}</small>${esc(p.text)}</div>`).join('');
+  return `<div class="wzbox" id="pbp"><h4>Play-by-play</h4>` + d.drives.map(x => {
+    const open = x.current ? !openDrives.has('-' + x.id) : openDrives.has(x.id);
+    const rcls = x.current ? '' : x.score ? ' sc' : /fumble|interception|downs|safety/i.test(x.result) ? ' to' : '';
+    return `<details class="drv${x.current ? ' cur' : ''}" data-drive="${esc(x.id)}"${open ? ' open' : ''}><summary>` +
+      `${x.logo ? `<img src="${esc(x.logo)}" alt="" onerror="this.style.visibility='hidden'">` : '<span></span>'}` +
+      `<span>${esc(x.team)} ${x.current ? '(on the field)' : ''}<small>${esc(x.desc)}</small></span><span class="res${rcls}">${esc(x.result)}<span class="chev">\u203A</span></span></summary>` +
+      plays(x.plays) + '</details>';
+  }).join('') + '</div>';
 }
 async function loadGameSummary(id) {
   try {
@@ -1465,11 +1616,18 @@ function renderGame() {
       return `<div class="l">${cell(x)}</div><div class="k">${label}</div><div class="r">${cell(y)}</div>`;
     }).join('');
     if (lrows) html += `<div class="wzbox"><h4>Game leaders</h4><div class="cmp ld">${lrows}</div></div>`;
+    html += pbpBox(d);
     if (d.scoring.length) html += `<div class="wzbox"><h4>Scoring plays</h4>` + d.scoring.slice().reverse().map(p =>
       `<div class="splay">${p.logo ? `<img src="${esc(p.logo)}" alt="" onerror="this.style.visibility='hidden'">` : '<span></span>'}<span>${esc(p.text)}<small>Q${esc(p.q)} • ${esc(p.clock)} • ${esc(p.team)}</small></span>` +
       `<span class="ss">${esc(p.a)}–${esc(p.h)}</span></div>`).join('') + '</div>';
   }
+  const keep = [...document.querySelectorAll('#livebox [data-pid], #livebox .wzbox h4')].find(e => e.getBoundingClientRect().top > 0);
+  const kid = keep && (keep.dataset.pid || keep.textContent), ktop = keep && keep.getBoundingClientRect().top;
   $('#livebox').innerHTML = html;
+  if (keep) {
+    const again = [...document.querySelectorAll('#livebox [data-pid], #livebox .wzbox h4')].find(e => (e.dataset.pid || e.textContent) === kid);
+    if (again) window.scrollBy(0, again.getBoundingClientRect().top - ktop);
+  }
 }
 
 // ---------------------------------------------------------------- account
@@ -1587,6 +1745,12 @@ $('#lgbtn').onclick = doLogin;
 $('#lgpass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 $('#acctbtn').onclick = () => { if (!$('#prof').classList.contains('hide')) showTab(lastTab); else openProfile(); };
 $('#t-live').onclick = () => { liveGame = null; showTab('live'); };
+$('#livebox').addEventListener('toggle', e => {          // remember which drives are expanded
+  const dr = e.target.closest && e.target.closest('[data-drive]'); if (!dr) return;
+  const id = dr.dataset.drive, cur = dr.classList.contains('cur');
+  if (cur) { if (dr.open) openDrives.delete('-' + id); else openDrives.add('-' + id); }
+  else if (dr.open) openDrives.add(id); else openDrives.delete(id);
+}, true);
 $('#livebox').addEventListener('click', e => {
   const c = e.target.closest('[data-live]'); if (c) { openGame(c.dataset.live); return; }
   if (e.target.closest('[data-back]')) { liveGame = null; renderLive(); }

@@ -30,8 +30,8 @@
         "picks": {
           "$week": {
             "$profile": {
-              ".write": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app') && root.child('access').child(auth.token.email.toLowerCase().replace('@pickem.app', '')).child('leagues').child($league).val() === true && $profile.toLowerCase() === auth.token.email.toLowerCase().replace('@pickem.app', '') && root.child('leagues').child($league).child('profiles').child($profile).exists()) || ((auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app') && !newData.exists())",
               "$game": {
+                ".write": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app') && root.child('access').child(auth.token.email.toLowerCase().replace('@pickem.app', '')).child('leagues').child($league).val() === true && $profile.toLowerCase() === auth.token.email.toLowerCase().replace('@pickem.app', '') && root.child('leagues').child($league).child('profiles').child($profile).exists() && (!root.child('kickoffs').child($week).child($game).exists() || root.child('kickoffs').child($week).child($game).val() > now)) || ((auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app') && !newData.exists())",
                 ".validate": "newData.isString() && newData.val().length <= 4 && $game.matches(/^[0-9]+$/)"
               }
             }
@@ -60,6 +60,15 @@
               ".validate": "newData.isNumber() && ($kind === 'done' || $kind === 'remind')"
             }
           }
+        }
+      }
+    },
+    "kickoffs": {
+      ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app')",
+      "$week": {
+        "$game": {
+          ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
+          ".validate": "newData.isNumber()"
         }
       }
     }
