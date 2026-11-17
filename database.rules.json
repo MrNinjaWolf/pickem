@@ -59,7 +59,8 @@
               ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
               ".validate": "newData.isNumber() && $kind.matches(/^[a-z0-9_-]{1,40}$/)"
             }
-          }
+          },
+          ".write": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app') && !newData.exists()"
         }
       },
       "final": {
@@ -67,6 +68,10 @@
           ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
           ".validate": "newData.isNumber()"
         }
+      },
+      "cleaned": {
+        ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
+        ".validate": "newData.isNumber()"
       }
     },
     "kickoffs": {
@@ -75,7 +80,8 @@
         "$game": {
           ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
           ".validate": "newData.isNumber()"
-        }
+        },
+        ".write": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app') && !newData.exists()"
       }
     },
     "resets": {
@@ -90,7 +96,8 @@
         ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
         ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
         ".validate": "newData.isNumber()"
-      }
+      },
+      ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'"
     },
     "vapid": {
       ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
@@ -111,6 +118,13 @@
         ".read": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app') || (auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app')",
         ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app'",
         ".validate": "newData.hasChildren() && (!newData.child('note').exists() || (newData.child('note').isString() && newData.child('note').val().length <= 400)) && (!newData.child('leads').exists() || newData.child('leads').isString())"
+      }
+    },
+    "log": {
+      ".read": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app') || (auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app')",
+      "$id": {
+        ".write": "((auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app') || (auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app')) && !data.exists() || ((auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app') && !newData.exists())",
+        ".validate": "!newData.exists() || (newData.child('t').isNumber() && newData.child('who').isString() && newData.child('what').isString() && newData.child('what').val().length <= 300)"
       }
     }
   }

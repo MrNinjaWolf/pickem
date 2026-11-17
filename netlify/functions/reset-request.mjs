@@ -2,7 +2,7 @@
 // address saved for that login. The reply is the same whether or not the login exists, so it
 // can't be used to find out who has an account.
 import crypto from 'node:crypto';
-import {missingSettings, signInMailer, database, mailer, send, appUrl} from './lib/pickem.mjs';
+import {missingSettings, signInMailer, database, mailer, send, appUrl, readSettings} from './lib/pickem.mjs';
 import {adminReady} from './lib/admin.mjs';
 
 const reply = (body, status = 200) => new Response(JSON.stringify(body), {status, headers: {'content-type': 'application/json'}});
@@ -26,7 +26,8 @@ export default async req => {
   await send(mailer(), email, "Reset your Pick'Em password", 'Reset your password', [
     `Someone asked to reset the password for <b>${u}</b>. If that was you, use the button below within an hour.`,
     `<a href="${link}" style="color:#ffc53d">Choose a new password</a>`,
-    "If you didn't ask for this, you can ignore this email. Your password won't change."]);
+    "If you didn't ask for this, you can ignore this email. Your password won't change."],
+    {fromName: readSettings(await q('GET', '/settings/notify').catch(() => null)).fromName});
   return reply(DONE);
 };
 

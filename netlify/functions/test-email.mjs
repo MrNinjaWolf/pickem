@@ -1,6 +1,6 @@
 // POST /api/test-email with {"idToken": "..."} from the app's Admin page.
 // Only the administrator's login may call it. Sends one test email to the administrator's saved address.
-import {ADMIN, DOMAIN, missingSettings, whoIs, signInMailer, database, mailer, send} from './lib/pickem.mjs';
+import {ADMIN, DOMAIN, missingSettings, whoIs, signInMailer, database, mailer, send, readSettings} from './lib/pickem.mjs';
 
 const reply = (body, status = 200) => new Response(JSON.stringify(body), {status, headers: {'content-type': 'application/json'}});
 
@@ -16,8 +16,9 @@ export default async req => {
     const q = database(await signInMailer());
     const to = await q('GET', `/emails/${ADMIN}`);
     if (!to) return reply({error: 'Save your own email address on the Admin page first.'}, 400);
+    const st = readSettings(await q('GET', '/settings/notify').catch(() => null));
     await send(mailer(), to, "Pick'Em test email", 'Reminder emails are working',
-      ['This is a test from your Pick\'Em app. Players with an email address get a message when a week\'s games are all final, and a reminder 2 hours before the next week\'s first kickoff if they still have picks to make.']);
+      ['This is a test from your Pick\'Em app. Players with an email address get the results and reminders you choose on the Admin tab.'], {fromName: st.fromName, note: st.note});
     return reply({ok: true, to});
   } catch (e) {
     const m = String(e.message || e);

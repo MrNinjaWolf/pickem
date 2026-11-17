@@ -24,7 +24,7 @@ async function accessToken() {
   if (cached.token && Date.now() < cached.exp - 60000) return cached.token;
   const sa = account(), now = Math.floor(Date.now() / 1000);
   const head = b64url(JSON.stringify({alg: 'RS256', typ: 'JWT'}));
-  const claim = b64url(JSON.stringify({iss: sa.client_email, scope: 'https://www.googleapis.com/auth/identitytoolkit https://www.googleapis.com/auth/cloud-platform',
+  const claim = b64url(JSON.stringify({iss: sa.client_email, scope: 'https://www.googleapis.com/auth/identitytoolkit https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/firebase.database https://www.googleapis.com/auth/userinfo.email',
     aud: 'https://oauth2.googleapis.com/token', iat: now, exp: now + 3600}));
   const sig = crypto.createSign('RSA-SHA256').update(head + '.' + claim).sign(sa.private_key, 'base64url');
   const r = await fetch('https://oauth2.googleapis.com/token', {method: 'POST', headers: {'content-type': 'application/x-www-form-urlencoded'},
@@ -47,4 +47,21 @@ export async function setPassword(username, password) {
   const user = (found.users || [])[0];
   if (!user) throw new Error('NO_SUCH_USER');
   await call('accounts:update', {localId: user.localId, password});
+}
+
+/** Creates a login (used by the Admin tab, so public sign-up can be switched off). Throws "EMAIL_EXISTS" if taken. */
+export async function createUser(username, password) {
+  await call('accounts', {email: username + DOMAIN, password, emailVerified: false});
+}
+
+/** Database access as the administrator credential (bypasses the rules). Used only for renaming a player. */
+export function adminDb() {
+  const base = E('PICKEM_DB_URL').replace(/\/+$/, ''), ns = E('PICKEM_DB_NS');
+  return async (method, path, body) => {
+    const r = await fetch(`${base}${path}.json${ns ? '?ns=' + encodeURIComponent(ns) : ''}`, {method,
+      headers: {authorization: 'Bearer ' + await accessToken(), ...(body === undefined ? {} : {'content-type': 'application/json'})},
+      body: body === undefined ? undefined : JSON.stringify(body)});
+    if (!r.ok) throw new Error(`database ${method} ${path}: HTTP ${r.status}`);
+    return r.json();
+  };
 }
