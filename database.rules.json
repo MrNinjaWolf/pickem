@@ -57,9 +57,15 @@
           "$kind": {
             "$user": {
               ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
-              ".validate": "newData.isNumber() && ($kind === 'done' || $kind === 'remind' || $kind === 'pushremind' || $kind.matches(/^g[0-9]+$/))"
+              ".validate": "newData.isNumber() && $kind.matches(/^[a-z0-9_-]{1,40}$/)"
             }
           }
+        }
+      },
+      "final": {
+        "$week": {
+          ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
+          ".validate": "newData.isNumber()"
         }
       }
     },
@@ -98,6 +104,13 @@
           ".write": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app') && auth.token.email.toLowerCase().replace('@pickem.app', '') === $user) || ((auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app') && !newData.exists())",
           ".validate": "newData.child('endpoint').isString() && newData.child('endpoint').val().beginsWith('https://') && newData.child('keys').child('p256dh').isString() && newData.child('keys').child('auth').isString()"
         }
+      }
+    },
+    "settings": {
+      "notify": {
+        ".read": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app') || (auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app')",
+        ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app'",
+        ".validate": "newData.hasChildren() && (!newData.child('note').exists() || (newData.child('note').isString() && newData.child('note').val().length <= 400)) && (!newData.child('leads').exists() || newData.child('leads').isString())"
       }
     }
   }

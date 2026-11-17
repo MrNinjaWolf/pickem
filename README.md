@@ -94,3 +94,16 @@ is opened from the Home Screen (Share > Add to Home Screen). Players get:
 The scheduled job sends them. Its push keys are created automatically on the first run and stored
 under `/vapid` (readable only by the mailer login), so there's nothing extra to set up beyond the
 email settings above and publishing the current `database.rules.json`.
+
+## Email & notification settings (Admin tab)
+
+`dakota` can change these on the Admin tab without a new build. The scheduled job reads them from
+`/settings/notify` every 15 minutes:
+
+- pause everything (kickoff times still save, so picks still lock)
+- results email and/or notification, sent as soon as a week is final or after a delay
+- reminder email and/or notification, up to four times before kickoff (30 minutes to 2 days),
+  before the week's first game or before every game day
+- the "your pick won/lost" notification after each game
+- the sender name, and a note added to every email
+- **Send a reminder now**, to everyone still missing picks
