@@ -48,6 +48,41 @@ select{background:#fff;color:#000;flex:1 1 140px;min-width:0}
 .team .ab{font-weight:800;font-size:18px}
 .team .nm{font-size:11px;opacity:.85;text-align:center;line-height:1.15}
 .team .tag{font-size:11px;font-weight:800;letter-spacing:.08em;height:13px}
+.team .rec{font-size:13px;font-weight:700}
+.team .mini{font-size:10px;opacity:.8;text-align:center;line-height:1.2}
+.wz{padding:4px 12px 48px}
+.wzhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;color:var(--muted);font-size:13px;margin:4px 2px 10px}
+.wzhead b{color:#fff;font-size:15px}
+.wzteams{display:grid;grid-template-columns:1fr 34px 1fr;gap:6px;align-items:stretch}
+.wzteam{display:flex;flex-direction:column;align-items:center;gap:3px;padding:14px 6px 12px;border-radius:14px;border:2px solid var(--edge);background:var(--card);color:#fff;font:inherit;border-top:6px solid var(--c)}
+.wzteam:active{background:var(--c);color:var(--fg)}
+.wzteam img{width:76px;height:76px;object-fit:contain}
+.wzteam .ab{font-weight:800;font-size:22px}
+.wzteam .nm{font-size:12px;opacity:.85;text-align:center;line-height:1.2;min-height:29px}
+.wzteam .rec{font-size:22px;font-weight:800;margin-top:4px}
+.wzteam .sub{font-size:11px;color:var(--muted)}
+.wzteam .go{margin-top:8px;background:var(--red);color:#fff;border-radius:999px;padding:6px 16px;font-size:13px;font-weight:800;letter-spacing:.06em}
+.wzat{display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--muted);font-size:18px}
+.wzbox{background:var(--panel);border-radius:14px;padding:10px 12px;margin-top:10px}
+.wzbox h4{margin:0 0 6px;font-size:12px;color:var(--muted);text-align:center;letter-spacing:.08em;text-transform:uppercase}
+.cmp{display:grid;grid-template-columns:1fr auto 1fr;gap:5px 8px;align-items:center;font-size:14px}
+.cmp .l{text-align:left;font-weight:700}
+.cmp .r{text-align:right;font-weight:700}
+.cmp .k{text-align:center;font-size:11px;color:var(--muted);white-space:nowrap}
+.cmp .best{color:var(--gold)}
+.cmp.ld{font-size:12px;gap:8px}
+.cmp.ld .l,.cmp.ld .r{font-weight:400;line-height:1.3}
+.cmp.ld b{display:block;font-size:13px}
+.prob{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:6px 0 4px;background:var(--card)}
+.prob span{display:block}
+.probt{display:flex;justify-content:space-between;font-size:13px;font-weight:700}
+.dots{letter-spacing:2px;font-weight:800}
+.dots .w{color:var(--green)}
+.dots .x{color:var(--bad)}
+.wzfoot{display:flex;gap:8px;margin-top:12px}
+.wzfoot .btn{flex:1}
+.wzwait{color:var(--muted);text-align:center;font-size:13px;padding:6px}
+#games .btn.more{width:100%}
 .mid{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
 .sc{font-weight:800;font-size:20px;white-space:nowrap}
 .st{font-size:11px;font-weight:700;margin-top:4px;color:var(--muted)}
@@ -467,9 +502,12 @@ function parseGame(ev) {
   const g = {id: String(ev.id), date: ev.date || '', away: {}, home: {}};
   for (const c of comp.competitors) {
     const t = c.team || {}, side = c.homeAway === 'home' ? 'home' : 'away';
-    g[side] = {abbr: t.abbreviation || '', name: t.displayName || '', logo: t.logo || '',
-               color: '#' + (t.color || '555555'), score: parseInt(c.score, 10) || 0};
+    const rec = type => ((c.records || []).find(r => r.type === type) || {}).summary || '';
+    g[side] = {id: String(t.id || ''), abbr: t.abbreviation || '', name: t.displayName || '', logo: t.logo || '',
+               color: '#' + (t.color || '555555'), score: parseInt(c.score, 10) || 0,
+               rec: rec('total'), home: rec('home'), road: rec('road')};
   }
+  g.tv = comp.broadcast || (((comp.broadcasts || [])[0] || {}).names || [])[0] || '';
   const ty = (ev.status && ev.status.type) || {};
   g.state = ty.state || 'pre';
   g.detail = ty.shortDetail || '';
@@ -524,6 +562,63 @@ async function loadGames(initial) {
     const saved = LS('games.' + wk());
     if (saved && (saved.length || !games.length)) { games = saved; render(); }
   }
+}
+
+// ---------------------------------------------------------------- matchup stats (ESPN game summary)
+// Before kickoff ESPN's summary has each team's season averages, season leaders, its win prediction and
+// the last five results. Only the parts used are kept, on this device, refreshed every 6 hours.
+const STATS = [  // [ESPN name, label, true when a higher number is better]
+  ['totalPointsPerGame', 'Points per game', true], ['totalPointsPerGameAllowed', 'Points allowed', false],
+  ['yardsPerGame', 'Total yards', true], ['yardsPerGameAllowed', 'Yards allowed', false],
+  ['passingYardsPerGame', 'Passing yards', true], ['rushingYardsPerGame', 'Rushing yards', true],
+  ['passingYardsPerGameAllowed', 'Pass yards allowed', false], ['rushingYardsPerGameAllowed', 'Rush yards allowed', false]];
+const LEADERS = [['passingYards', 'Passing'], ['rushingYards', 'Rushing'], ['receivingYards', 'Receiving']];
+const SUM_TTL = 6 * 3600e3, sumBusy = new Set(), sumFail = new Map();   // sumFail: game id -> when it last failed
+function readSummary(j) {
+  const d = {stats: {}, leaders: {}, last5: {}, prob: null};
+  for (const t of (j.boxscore && j.boxscore.teams) || []) {
+    const o = {};
+    for (const x of t.statistics || []) o[x.name] = x.displayValue;
+    if (STATS.some(([n]) => o[n] !== undefined)) d.stats[t.team.abbreviation] = o;   // season averages only exist before kickoff
+  }
+  for (const t of j.leaders || []) {
+    d.leaders[t.team.abbreviation] = (t.leaders || []).filter(c => LEADERS.some(([n]) => n === c.name) && c.leaders && c.leaders[0])
+      .map(c => ({cat: c.name, who: (c.leaders[0].athlete || {}).shortName || '', line: c.leaders[0].displayValue || ''}));
+  }
+  for (const t of j.lastFiveGames || [])             // oldest to newest
+    d.last5[t.team.abbreviation] = [...(t.events || [])].sort((a, b) => String(a.gameDate).localeCompare(String(b.gameDate))).map(e => e.gameResult).filter(Boolean);
+  const pr = j.predictor;
+  if (pr && pr.homeTeam && pr.awayTeam) d.prob = {home: +pr.homeTeam.gameProjection || 0, away: +pr.awayTeam.gameProjection || 0};
+  return d;
+}
+const summaryOf = g => { const c = LS('sum.' + g.id); return c && c.d; };
+async function loadSummary(g) {
+  const c = LS('sum.' + g.id);
+  if (sumBusy.has(g.id) || (c && (g.state !== 'pre' || Date.now() - c.t < SUM_TTL))) return;
+  if (g.state !== 'pre') return;                      // after kickoff ESPN only has that game's stats
+  if (Date.now() - (sumFail.get(g.id) || 0) < 60000) return;   // wait a minute before trying again
+  sumBusy.add(g.id);
+  try {
+    const r = await fetch(ESPN.replace('/scoreboard', '/summary') + '?event=' + encodeURIComponent(g.id));
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    setLS('sum.' + g.id, {t: Date.now(), d: readSummary(await r.json())}); sumFail.delete(g.id);
+    if (games.some(x => x.id === g.id)) renderPicks();
+  } catch (e) { sumFail.set(g.id, Date.now()); }               // offline: show what is saved
+  sumBusy.delete(g.id);
+  if (sumFail.has(g.id) && games.some(x => x.id === g.id)) renderPicks();
+}
+async function loadSummaries(list) {               // a few at a time, for the stats on the full list
+  const todo = list.filter(g => g.state === 'pre');
+  for (let i = 0; i < todo.length; i += 3) await Promise.all(todo.slice(i, i + 3).map(loadSummary));
+}
+function pruneSummaries() {                         // forget matchups more than three weeks old
+  try {
+    for (const k of Object.keys(localStorage)) {
+      if (!k.startsWith('nflpickem.sum.')) continue;
+      const v = JSON.parse(localStorage.getItem(k));
+      if (!v || Date.now() - v.t > 21 * 86400e3) localStorage.removeItem(k);
+    }
+  } catch (e) { /* blocked */ }
 }
 
 // ---------------------------------------------------------------- picks + profiles
@@ -615,7 +710,79 @@ function teamBtn(g, side) {
   }
   return `<button type="button" class="${cls}" data-g="${esc(g.id)}" data-t="${esc(t.abbr)}" style="--c:${esc(t.color)};--fg:${contrast(t.color)}">` +
     (t.logo ? `<img src="${esc(t.logo)}" alt="" loading="lazy">` : '') +
-    `<span class="ab">${esc(t.abbr)}</span><span class="nm">${esc(t.name)}</span><span class="tag">${tag}</span></button>`;
+    `<span class="ab">${esc(t.abbr)}</span><span class="nm">${esc(t.name)}</span>` +
+    (t.rec ? `<span class="rec">${esc(t.rec)}</span>` : '') + miniStats(g, t) +
+    `<span class="tag">${tag}</span></button>`;
+}
+function miniStats(g, t) {
+  const d = summaryOf(g), st = d && d.stats[t.abbr];
+  if (!st || st.totalPointsPerGame === undefined) return '';
+  return `<span class="mini">Scores ${esc(st.totalPointsPerGame)}<br>Allows ${esc(st.totalPointsPerGameAllowed)}</span>`;
+}
+
+// ---------------------------------------------------------------- one game at a time
+let listMode = false;                 // "Show all games" was tapped
+const skipped = new Set();            // games skipped for now
+const pickable = g => g.state === 'pre' && !(Date.parse(g.date) <= Date.now());
+const toPick = () => games.filter(g => pickable(g) && !picks[pk(profile, g.id)]);
+function resetWizard() { listMode = false; skipped.clear(); }
+function kickoff(g) {
+  const d = new Date(g.date);
+  return isNaN(d) ? esc(g.detail) : esc(d.toLocaleString([], {weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'})) +
+    (g.tv ? ' • ' + esc(g.tv) : '');
+}
+function wzTeam(g, side) {
+  const t = g[side], sub = [side === 'home' ? 'Home' : 'Away', side === 'home' ? t.home : t.road].filter(Boolean).join(' ');
+  return `<button type="button" class="wzteam" data-g="${esc(g.id)}" data-t="${esc(t.abbr)}" style="--c:${esc(t.color)};--fg:${contrast(t.color)}">` +
+    (t.logo ? `<img src="${esc(t.logo)}" alt="">` : '') +
+    `<span class="ab">${esc(t.abbr)}</span><span class="nm">${esc(t.name)}</span>` +
+    `<span class="rec">${esc(t.rec || '–')}</span><span class="sub">${esc(sub)}</span><span class="go">PICK</span></button>`;
+}
+function num(v) { const n = parseFloat(String(v).replace(/,/g, '')); return isNaN(n) ? null : n; }
+function compareBox(g, d) {
+  const a = d.stats[g.away.abbr], h = d.stats[g.home.abbr];
+  if (!a || !h) return '';
+  const rows = STATS.filter(([n]) => a[n] !== undefined && h[n] !== undefined).map(([n, label, high]) => {
+    const x = num(a[n]), y = num(h[n]);
+    const aBest = x !== null && y !== null && x !== y && (high ? x > y : x < y), hBest = x !== null && y !== null && x !== y && !aBest;
+    return `<div class="l${aBest ? ' best' : ''}">${esc(a[n])}</div><div class="k">${label}</div><div class="r${hBest ? ' best' : ''}">${esc(h[n])}</div>`;
+  }).join('');
+  return `<div class="wzbox"><h4>Season averages per game</h4><div class="cmp">${rows}</div></div>`;
+}
+function leadersBox(g, d) {
+  const a = d.leaders[g.away.abbr] || [], h = d.leaders[g.home.abbr] || [];
+  const rows = LEADERS.map(([n, label]) => {
+    const x = a.find(l => l.cat === n), y = h.find(l => l.cat === n);
+    if (!x && !y) return '';
+    const cell = l => l ? `<b>${esc(l.who)}</b>${esc(l.line)}` : '–';
+    return `<div class="l">${cell(x)}</div><div class="k">${label}</div><div class="r">${cell(y)}</div>`;
+  }).join('');
+  return rows ? `<div class="wzbox"><h4>Season leaders</h4><div class="cmp ld">${rows}</div></div>` : '';
+}
+function formBox(g, d) {
+  const dots = abbr => (d.last5[abbr] || []).map(r => `<span class="${r === 'W' ? 'w' : r === 'L' ? 'x' : ''}">${esc(r)}</span>`).join(' ') || '–';
+  let out = '';
+  if (d.prob && (d.prob.home || d.prob.away)) {
+    const tot = d.prob.home + d.prob.away || 1, ap = d.prob.away / tot * 100;
+    out += `<h4>ESPN win chance</h4><div class="probt"><span>${esc(g.away.abbr)} ${d.prob.away.toFixed(0)}%</span><span>${d.prob.home.toFixed(0)}% ${esc(g.home.abbr)}</span></div>` +
+      `<div class="prob"><span style="width:${ap}%;background:${esc(g.away.color)}"></span><span style="flex:1;background:${esc(g.home.color)}"></span></div>`;
+  }
+  if (d.last5[g.away.abbr] || d.last5[g.home.abbr])
+    out += `<h4 style="margin-top:10px">Last 5 games</h4><div class="cmp"><div class="l dots">${dots(g.away.abbr)}</div><div class="k">oldest → newest</div><div class="r dots">${dots(g.home.abbr)}</div></div>`;
+  return out ? `<div class="wzbox">${out}</div>` : '';
+}
+function renderWizard(list) {
+  const g = list[0], total = games.filter(pickable).length, done = total - toPick().length;
+  const d = summaryOf(g);
+  loadSummary(g);
+  if (list[1]) loadSummary(list[1]);                // have the next one ready
+  $('#summary').innerHTML = '';
+  $('#games').innerHTML = `<div class="wz"><div class="wzhead"><b>Pick ${done + 1} of ${total}</b><span>${kickoff(g)}</span></div>` +
+    `<div class="wzteams">${wzTeam(g, 'away')}<div class="wzat">@</div>${wzTeam(g, 'home')}</div>` +
+    (d ? compareBox(g, d) + leadersBox(g, d) + formBox(g, d)
+       : `<div class="wzwait">${sumFail.has(g.id) ? "Couldn't load stats from ESPN. Records are still shown above." : 'Loading stats…'}</div>`) +
+    `<div class="wzfoot"><button type="button" class="btn alt" data-act="skip" data-g="${esc(g.id)}">Skip for now</button>` +
+    `<button type="button" class="btn alt" data-act="all">Show all games</button></div></div>`;
 }
 function mid(g) {
   const sc = g.state === 'pre' ? '@' : `${g.away.score} \u2013 ${g.home.score}`;
@@ -633,12 +800,17 @@ function renderPicks() {
   const hint = mine(profile) ? 'Tap a team to pick it (tap again to clear). Picks lock at kickoff.'
     : myProfile() ? `You're looking at ${esc(profile)}'s picks. You can only pick for yourself.`
     : "Your name isn't on the list yet, so you can't make picks. Ask the administrator to add it.";
+  const open = mine(profile) && !listMode ? toPick().filter(g => !skipped.has(g.id)) : [];
+  if (open.length) { renderWizard(open); return; }
   let made = 0, w = 0, l = 0, pend = 0;
   games.forEach(g => { const o = outcome(profile, g); if (o !== 'N') made++; if (o === 'W') w++; if (o === 'L') l++; if (o === 'P') pend++; });
+  const left = mine(profile) ? toPick().length : 0;
+  loadSummaries(games);
   $('#summary').innerHTML = `<b>${esc(profile)}</b> &nbsp;${made} of ${games.length} picked \u2022 ${w} correct \u2022 ${l} wrong \u2022 ${pend} pending<br>` +
     `<small>${hint}</small>`;
   $('#games').innerHTML = games.length
-    ? games.map(g => `<div class="card">${teamBtn(g, 'away')}${mid(g)}${teamBtn(g, 'home')}</div>`).join('')
+    ? (left ? `<button type="button" class="btn more" data-act="resume">Pick the ${left} remaining game${left === 1 ? '' : 's'} one at a time</button>` : '') +
+      games.map(g => `<div class="card">${teamBtn(g, 'away')}${mid(g)}${teamBtn(g, 'home')}</div>`).join('')
     : '<div class="empty">No games to show for this week.</div>';
 }
 
@@ -766,10 +938,24 @@ function openAcct() {
 }
 
 // ---------------------------------------------------------------- wiring
-$('#games').addEventListener('click', e => { const b = e.target.closest('.team'); if (b) pick(b.dataset.g, b.dataset.t); });
-$('#profile').addEventListener('change', e => { profile = e.target.value; save(); render(); });
+$('#games').addEventListener('click', e => {
+  const act = e.target.closest('[data-act]');
+  if (act) {
+    if (act.dataset.act === 'skip') skipped.add(act.dataset.g);
+    else if (act.dataset.act === 'all') listMode = true;
+    else resetWizard();
+    renderPicks(); window.scrollTo(0, 0); return;
+  }
+  const b = e.target.closest('.team, .wzteam');
+  if (!b) return;
+  const wizard = b.classList.contains('wzteam');
+  pick(b.dataset.g, b.dataset.t);
+  if (wizard && picks[pk(profile, b.dataset.g)] === b.dataset.t) { toast('Picked ' + b.dataset.t); window.scrollTo(0, 0); }
+});
+$('#profile').addEventListener('change', e => { profile = e.target.value; resetWizard(); save(); render(); });
 $('#period').addEventListener('change', e => {
   period = PERIODS[+e.target.value];
+  resetWizard();
   games = LS('games.' + wk()) || [];
   render(); setStatus('Loading ' + period.label + '\u2026'); loadGames(false);
 });
@@ -779,7 +965,7 @@ $('#refresh').onclick = () => {
   loadGames(false); pull();
   if (!$('#stand').classList.contains('hide')) loadSeason(true);
 };
-$('#t-picks').onclick = () => showTab('picks');
+$('#t-picks').onclick = () => { resetWizard(); renderPicks(); showTab('picks'); };
 $('#t-score').onclick = () => showTab('score');
 $('#t-stand').onclick = () => showTab('stand');
 $('#lgbtn').onclick = doLogin;
@@ -805,6 +991,7 @@ setInterval(() => {
 (async function init() {
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* not supported */ }
   try { if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) { /* not supported */ }
+  pruneSummaries();
   fillLoginFields();
   if (auth && auth.refresh && cfg.url && cfg.key) {
     try { leagues = await fetchLeagues(); setLS('leagues', leagues); }
