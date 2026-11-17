@@ -741,7 +741,7 @@ function clearAll() {
     delete picks[pk(profile, g.id)];
     syncSend('DELETE', `/picks/${wk()}/${encodeURIComponent(profile)}/${g.id}`);
   }
-  save(); resetWizard(); render(); window.scrollTo(0, 0);
+  save(); resetWizard(); render(); showPicksTop();
   toast('Picks cleared');
 }
 function kickoff(g) {
@@ -824,6 +824,19 @@ function restoreAnchor(a) {
   if (!a) return;
   const el = document.querySelector(`#games .card [data-g="${CSS.escape(a.id)}"]`);
   if (el) window.scrollBy(0, el.closest('.card').getBoundingClientRect().top - a.top);
+}
+/** Redraws with the one-at-a-time team cards kept at the same spot on screen, so the next game's
+ *  teams appear right where the last ones were. */
+function keepWizardPlace(update) {
+  const el = document.querySelector('#games .wzteams'), top = el ? el.getBoundingClientRect().top : null;
+  update();
+  const now = document.querySelector('#games .wzteams');
+  if (top !== null && now) window.scrollBy(0, now.getBoundingClientRect().top - top);
+}
+/** Brings the top of the Picks tab into view only if it has been scrolled past (never to the page top). */
+function showPicksTop() {
+  const t = $('#picks').getBoundingClientRect().top;
+  if (t < 0) window.scrollBy(0, t);
 }
 function renderPicks() {
   const anchor = listAnchor(); tapped = null;
@@ -977,17 +990,21 @@ $('#games').addEventListener('click', e => {
   const act = e.target.closest('[data-act]');
   if (act) {
     if (act.dataset.act === 'clear') { clearAll(); return; }
-    if (act.dataset.act === 'skip') skipped.add(act.dataset.g);
-    else if (act.dataset.act === 'all') listMode = true;
-    else resetWizard();
-    renderPicks(); window.scrollTo(0, 0); return;
+    if (act.dataset.act === 'skip') {
+      keepWizardPlace(() => { skipped.add(act.dataset.g); renderPicks(); });
+      const cards = document.querySelector('#games .wzteams');      // Skip sits under the stats: show the next teams
+      if (cards && cards.getBoundingClientRect().top < 0) showPicksTop();
+      return;
+    }
+    if (act.dataset.act === 'all') listMode = true; else resetWizard();
+    renderPicks(); showPicksTop(); return;
   }
   const b = e.target.closest('.team, .wzteam');
   if (!b) return;
   const wizard = b.classList.contains('wzteam');
   if (!wizard) { listMode = true; tapped = b.dataset.g; }      // stay on the list, with this game where it was
-  pick(b.dataset.g, b.dataset.t);
-  if (wizard && picks[pk(profile, b.dataset.g)] === b.dataset.t) { toast('Picked ' + b.dataset.t); window.scrollTo(0, 0); }
+  if (wizard) keepWizardPlace(() => pick(b.dataset.g, b.dataset.t)); else pick(b.dataset.g, b.dataset.t);
+  if (wizard && picks[pk(profile, b.dataset.g)] === b.dataset.t) toast('Picked ' + b.dataset.t);
 });
 $('#profile').addEventListener('change', e => { profile = e.target.value; resetWizard(); save(); render(); });
 $('#period').addEventListener('change', e => {
