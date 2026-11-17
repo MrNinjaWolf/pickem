@@ -89,6 +89,9 @@ dialog p{font-size:14px;line-height:1.4}
 .row .btn{flex:1}
 #toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#000c;color:#fff;padding:10px 16px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:10;max-width:90vw;text-align:center}
 #toast.show{opacity:1}
+#admbox{margin-top:18px;padding-top:12px;border-top:1px solid var(--edge)}
+#admbox h3{margin:0 0 4px;font-size:17px}
+#admbox .btn{width:100%;margin-top:14px}
 </style>
 <script src="config.js"></script>
 </head>
@@ -132,8 +135,8 @@ dialog p{font-size:14px;line-height:1.4}
 <div id="app" class="hide">
   <div class="bar">
     <select id="profile" aria-label="Profile"></select>
-    <button class="btn" id="addp" type="button">+ Add</button>
-    <button class="btn alt" id="delp" type="button">Delete</button>
+    <button class="btn hide" id="addp" type="button">+ Add</button>
+    <button class="btn alt hide" id="delp" type="button">Remove</button>
     <select id="period" aria-label="Week"></select>
     <button class="btn alt" id="refresh" type="button">Refresh</button>
   </div>
@@ -167,6 +170,16 @@ dialog p{font-size:14px;line-height:1.4}
     <label for="dbsel">Database</label>
     <select id="dbsel" style="width:100%"></select>
   </div>
+  <div id="admbox" class="hide">
+    <h3>Create a login</h3>
+    <p style="margin:0;color:var(--muted)">The new login gets access to <b id="nulg"></b> and is added to its list.</p>
+    <label for="nuuser">Username</label>
+    <input id="nuuser" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <label for="nupass">Password (at least 6 characters)</label>
+    <input id="nupass" type="text" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <button class="btn" id="nubtn" type="button">Create login</button>
+    <div class="err" id="nuerr"></div>
+  </div>
   <div class="row">
     <button class="btn alt" id="acctclose" type="button">Close</button>
     <button class="btn" id="acctlogout" type="button">Log out</button>
@@ -179,6 +192,7 @@ dialog p{font-size:14px;line-height:1.4}
 const $ = s => document.querySelector(s);
 const ESPN = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard';
 const DOMAIN = '@pickem.app';
+const ADMIN = 'dakota';                   // this login can manage the list and create logins (also set in database.rules.json)
 const PERIODS = Array.from({length: 18}, (_, i) => ({label: 'Week ' + (i + 1), type: 2, week: i + 1})).concat([
   {label: 'Wild Card', type: 3, week: 1}, {label: 'Divisional', type: 3, week: 2},
   {label: 'Conference Championship', type: 3, week: 3}, {label: 'Super Bowl', type: 3, week: 5}]);
@@ -211,6 +225,9 @@ const pk = (p, gid) => p + '|' + wk() + '|' + gid;
 const save = () => { if (!league) return; setlsl(league, 'profiles', profiles); setlsl(league, 'picks', picks); setlsl(league, 'profile', profile); };
 const active = () => screen === 'app' && !!auth && !!league;
 const syncOn = () => active() && !!cfg.url;
+const isAdmin = () => !!auth && auth.user === ADMIN;
+const mine = p => !!auth && typeof p === 'string' && p.toLowerCase() === auth.user;   // a name on the list belongs to the login with the same name
+const myProfile = () => profiles.find(mine) || null;
 
 function toast(msg) {
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
@@ -253,6 +270,10 @@ function friendly(e) {
   if (/INVALID_LOGIN_CREDENTIALS|INVALID_PASSWORD|EMAIL_NOT_FOUND/.test(m)) return 'Wrong username or password.';
   if (/USER_DISABLED/.test(m)) return 'This account has been disabled.';
   if (/TOO_MANY_ATTEMPTS/.test(m)) return 'Too many attempts. Wait a few minutes and try again.';
+  if (/EMAIL_EXISTS/.test(m)) return 'That username already exists.';
+  if (/WEAK_PASSWORD/.test(m)) return 'The password needs at least 6 characters.';
+  if (/ADMIN_ONLY_OPERATION/.test(m)) return 'Creating accounts is turned off in Firebase (Authentication > Settings > User actions).';
+  if (/^HTTP 40[13]$/.test(m)) return 'The database refused the change. Check that the latest rules are published.';
   if (/OPERATION_NOT_ALLOWED/.test(m)) return 'Email/password sign-in is not turned on in Firebase.';
   if (/API key|API_KEY/i.test(m)) return 'The Firebase Web API key is not valid.';
   if (e instanceof TypeError || /Failed to fetch|NetworkError|Load failed/i.test(m)) return 'Could not reach the server. Check your connection and the database URL.';
@@ -303,20 +324,37 @@ function syncProblem(e) {
   if (e && (e.status === 401 || e.status === 403)) { recheckAccess(); return; }
   chip.bad = true; chip();
 }
+// Changes waiting to reach the database, oldest first. Each is sent on its own, so a phone that was
+// offline never re-uploads its whole copy over other players' newer picks or brings back deleted ones.
+const outbox = lg => lsl(lg, 'outbox') || [];
 function syncSend(method, path, body) {
   if (!syncOn()) return;
-  const lg = league, url = dbBase() + path;
+  const lg = league;
+  setlsl(lg, 'outbox', outbox(lg).concat([{method, path, body}]));
   enqueue(async () => {
-    try { await dbCall(method, url, body); chip.bad = false; }
-    catch (e) { setlsl(lg, 'pending', true); syncProblem(e); }
+    try { await sendOutbox(lg); chip.bad = false; }
+    catch (e) { syncProblem(e); }
     chip();
   }).catch(() => {});
 }
-function flat() {                                   // every leaf as a multi-path update
-  const o = {};
-  profiles.forEach(p => { o['profiles/' + p] = true; });
-  Object.entries(picks).forEach(([k, v]) => { const [p, w, g] = k.split('|'); o[`picks/${w}/${p}/${g}`] = v; });
-  return o;
+/** Sends queued changes in order. Offline: throws and keeps them. A change the database refuses is dropped. */
+async function sendOutbox(lg) {
+  for (let ob = outbox(lg); ob.length; ob = outbox(lg)) {
+    const op = ob[0];
+    try { await dbCall(op.method, cfg.url + '/leagues/' + encodeURIComponent(lg) + op.path, op.body); }
+    catch (e) {
+      if (e.status !== 400 && e.status !== 401 && e.status !== 403) throw e;
+      toast('The database refused a change, so it was undone');
+      setTimeout(pull, 0);                          // reload the real data once this finishes
+    }
+    setlsl(lg, 'outbox', outbox(lg).slice(1));
+  }
+}
+/** Applies a queued change to downloaded data, so a tap made during a download does not flicker away. */
+function applyOp(names, map, op) {
+  const [kind, a, b, c] = op.path.split('/').slice(1).map(decodeURIComponent), del = op.method === 'DELETE';
+  if (kind === 'profiles') { if (del) names.delete(a); else names.add(a); }
+  else if (kind === 'picks') { const k = b + '|' + a + '|' + c; if (del) delete map[k]; else map[k] = op.body; }
 }
 const sameMap = (a, b) => { const ka = Object.keys(a); return ka.length === Object.keys(b).length && ka.every(k => b[k] === a[k]); };
 
@@ -326,28 +364,19 @@ function pull() {
   return enqueue(async () => {
     try {
       if (lg !== league) return 'stale';
-      if (lsl(lg, 'pending')) {
-        const f = flat();
-        if (Object.keys(f).length) await dbCall('PATCH', base, f);
-        setlsl(lg, 'pending', false);
-      }
+      await sendOutbox(lg);
       const root = (await dbCall('GET', base)) || {};
       if (lg !== league) return 'stale';
-      const rp = Object.keys(root.profiles || {}).sort(cmp);
-      const rk = {};
+      const names = new Set(Object.keys(root.profiles || {})), rk = {};
       for (const [w, byP] of Object.entries(root.picks || {}))
         for (const [p, byG] of Object.entries(byP || {}))
           for (const [g, ab] of Object.entries(byG || {})) rk[`${p}|${w}|${g}`] = ab;
+      outbox(lg).forEach(op => applyOp(names, rk, op));
+      const rp = [...names].sort(cmp);
       chip.bad = false;
-      if (!rp.length && !Object.keys(rk).length) {                         // brand-new database: publish what is here
-        const f = flat();
-        if (Object.keys(f).length) await dbCall('PATCH', base, f);
-        chip(); return 'empty';
-      }
       if (JSON.stringify(rp) === JSON.stringify([...profiles].sort(cmp)) && sameMap(rk, picks)) { chip(); return 'same'; }
-      if (rp.length) profiles = rp;
-      picks = rk;
-      if (!profiles.includes(profile)) profile = profiles[0];
+      profiles = rp; picks = rk;
+      if (!profiles.includes(profile)) profile = myProfile() || profiles[0] || null;
       save(); buildSelects(); render(); chip();
       return 'remote';
     } catch (e) { syncProblem(e); return 'error'; }
@@ -365,6 +394,15 @@ function fillLoginFields() {
   $('#lguser').value = (auth && auth.user) || LS('lastuser') || '';
   $('#lgcfg').open = !(cfg.url && cfg.key);
 }
+/** Removes this device's saved copy of every database (used on log out and when someone else logs in). */
+function clearLocalData() {
+  try { Object.keys(localStorage).filter(k => k.startsWith('nflpickem.db.')).forEach(k => localStorage.removeItem(k)); } catch (e) { /* blocked */ }
+  leagues = []; league = ''; setLS('leagues', null); setLS('league', null);
+}
+function manualLogout() {
+  if (league && outbox(league).length && !confirm('Some changes have not reached the database yet. Log out anyway and lose them?')) return;
+  $('#acctdlg').close(); clearLocalData(); logout('');
+}
 function logout(msg) {
   auth = null; setLS('auth', null);
   profiles = []; picks = {}; profile = null; games = [];
@@ -379,6 +417,7 @@ async function doLogin() {
   const url = $('#lgurl').value.trim().replace(/\/+$/, ''), key = $('#lgkey').value.trim();
   if (!u || !p) { err('Enter your username and password.'); return; }
   if (!/^https:\/\//.test(url) || !key) { $('#lgcfg').open = true; err('Enter the database URL and Web API key under Server settings.'); return; }
+  if (u !== LS('lastuser')) clearLocalData();        // a different person: start without the last one's data
   cfg = {url, key}; setLS('cfg', cfg); setLS('lastuser', u);
   $('#lgbtn').disabled = true; err('Signing in\u2026');
   try {
@@ -411,8 +450,8 @@ async function recheckAccess() {                    // a request was refused: ha
 }
 async function enterLeague(id) {
   league = id; setLS('league', id);
-  profiles = lsl(id, 'profiles') || []; picks = lsl(id, 'picks') || {}; profile = lsl(id, 'profile');
-  if (!profiles.includes(profile)) profile = profiles[0] || null;
+  profiles = lsl(id, 'profiles') || []; picks = lsl(id, 'picks') || {};
+  profile = myProfile() || (profiles.includes(lsl(id, 'profile')) ? lsl(id, 'profile') : profiles[0] || null);
   showScreen('app');
   $('#acctbtn').textContent = auth.user;
   buildSelects(); chip();
@@ -420,12 +459,6 @@ async function enterLeague(id) {
   render();
   if (!loadedOnce) { loadedOnce = true; await loadGames(true); } else await loadGames(false);
   await pull();
-  if (league === id && !profiles.length) {          // first time in an empty database
-    const n = clean(prompt('Enter a name for your first profile:') || '') || 'Player 1';
-    profiles = [n]; profile = n; save();
-    syncSend('PUT', '/profiles/' + encodeURIComponent(n), true);
-    buildSelects(); render();
-  }
 }
 
 // ---------------------------------------------------------------- games
@@ -497,7 +530,8 @@ async function loadGames(initial) {
 function pick(gid, abbr) {
   const g = games.find(x => x.id === gid);
   if (!g || !profile) return;
-  if (g.state !== 'pre') { toast('Picks lock at kickoff'); return; }
+  if (!mine(profile)) { toast(myProfile() ? 'You can only make picks for yourself' : 'Ask the administrator to add your name to the list'); return; }
+  if (g.state !== 'pre' || Date.parse(g.date) <= Date.now()) { toast('Picks lock at kickoff'); return; }
   const k = pk(profile, gid), cleared = picks[k] === abbr;
   if (cleared) delete picks[k]; else picks[k] = abbr;
   save();
@@ -506,7 +540,8 @@ function pick(gid, abbr) {
   render();
 }
 function addProfile() {
-  const n = clean(prompt('New profile name:') || '');
+  if (!isAdmin()) return;
+  const n = clean(prompt("Name to add. Use the person's username (capitals don't matter) so they can make their own picks:") || '');
   if (!n) return;
   const dup = profiles.find(p => p.toLowerCase() === n.toLowerCase());
   if (dup) { profile = dup; toast('That profile already exists'); }
@@ -514,8 +549,12 @@ function addProfile() {
   save(); buildSelects(); render();
 }
 function deleteProfile() {
-  if (profiles.length <= 1) { alert('You need at least one profile.'); return; }
-  if (!confirm(`Delete profile "${profile}" and all of its picks?`)) return;
+  if (!isAdmin() || !profile) return;
+  if (!confirm(`Remove "${profile}" from the list and delete all of their picks?`)) return;
+  const u = profile.toLowerCase(), lg = league;
+  if (/^[a-z0-9_-]+$/.test(u) && u !== auth.user && confirm(`Also stop the login "${u}" from seeing "${lg}"?`))
+    enqueue(() => dbCall('DELETE', cfg.url + '/access/' + encodeURIComponent(u) + '/leagues/' + encodeURIComponent(lg)))
+      .then(() => toast(`"${u}" can no longer see "${lg}"`), e => toast(friendly(e)));
   for (const k of Object.keys(picks)) {
     if (k.startsWith(profile + '|')) {
       const [p, w, g] = k.split('|');
@@ -525,13 +564,45 @@ function deleteProfile() {
   }
   syncSend('DELETE', '/profiles/' + encodeURIComponent(profile));
   profiles = profiles.filter(p => p !== profile);
-  profile = profiles[0];
+  profile = myProfile() || profiles[0] || null;
   save(); buildSelects(); render();
+}
+
+/** Administrator: creates a username and password, gives it the current database, and adds it to the list. */
+async function createLogin() {
+  const msg = m => { $('#nuerr').textContent = m; };
+  const raw = $('#nuuser').value.trim().toLowerCase(), u = raw.replace(/[^a-z0-9_-]/g, ''), p = $('#nupass').value, lg = league;
+  if (!u || u !== raw) { msg('Usernames can only use letters, numbers, - and _.'); return; }
+  if (p.length < 6) { msg('The password needs at least 6 characters.'); return; }
+  $('#nubtn').disabled = true; msg('Creating…');
+  try {
+    let existed = false;
+    try {
+      await authPost('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + encodeURIComponent(cfg.key),
+        {email: u + DOMAIN, password: p, returnSecureToken: false});
+    } catch (e) {
+      if (!/EMAIL_EXISTS/.test(e.message)) throw e;
+      if (!confirm(`The username "${u}" already exists, and its password was not changed. Give that account access to "${lg}" anyway?`)) { msg(''); return; }
+      existed = true;
+    }
+    await dbCall('PUT', cfg.url + '/access/' + encodeURIComponent(u) + '/leagues/' + encodeURIComponent(lg), true);
+    if (lg === league && !profiles.some(x => x.toLowerCase() === u)) {
+      const n = u.charAt(0).toUpperCase() + u.slice(1);
+      profiles.push(n); profiles.sort(cmp); save();
+      syncSend('PUT', '/profiles/' + encodeURIComponent(n), true);
+      buildSelects(); render();
+    }
+    $('#nuuser').value = ''; $('#nupass').value = '';
+    msg(existed ? `"${u}" can now see "${lg}".` : `Created "${u}". They can log in now.`);
+  } catch (e) { msg(friendly(e)); }
+  finally { $('#nubtn').disabled = false; }
 }
 
 // ---------------------------------------------------------------- rendering
 function buildSelects() {
-  $('#profile').innerHTML = profiles.map(p => `<option${p === profile ? ' selected' : ''}>${esc(p)}</option>`).join('');
+  $('#profile').innerHTML = profiles.map(p => `<option value="${esc(p)}"${p === profile ? ' selected' : ''}>${esc(p)}${mine(p) ? ' (you)' : ''}</option>`).join('');
+  $('#addp').classList.toggle('hide', !isAdmin());
+  $('#delp').classList.toggle('hide', !isAdmin() || !profiles.length);
   $('#period').innerHTML = PERIODS.map((p, i) => `<option value="${i}"${p === period ? ' selected' : ''}>${esc(p.label)}</option>`).join('');
 }
 
@@ -555,10 +626,17 @@ function mid(g) {
 }
 
 function renderPicks() {
+  if (!profile) {
+    $('#summary').innerHTML = isAdmin() ? 'No names on the list yet. Tap <b>+ Add</b> to add one.' : 'No names on the list yet. Ask the administrator to add yours.';
+    $('#games').innerHTML = ''; return;
+  }
+  const hint = mine(profile) ? 'Tap a team to pick it (tap again to clear). Picks lock at kickoff.'
+    : myProfile() ? `You're looking at ${esc(profile)}'s picks. You can only pick for yourself.`
+    : "Your name isn't on the list yet, so you can't make picks. Ask the administrator to add it.";
   let made = 0, w = 0, l = 0, pend = 0;
   games.forEach(g => { const o = outcome(profile, g); if (o !== 'N') made++; if (o === 'W') w++; if (o === 'L') l++; if (o === 'P') pend++; });
   $('#summary').innerHTML = `<b>${esc(profile)}</b> &nbsp;${made} of ${games.length} picked \u2022 ${w} correct \u2022 ${l} wrong \u2022 ${pend} pending<br>` +
-    `<small>Tap a team to pick it (tap again to clear). Picks lock at kickoff.</small>`;
+    `<small>${hint}</small>`;
   $('#games').innerHTML = games.length
     ? games.map(g => `<div class="card">${teamBtn(g, 'away')}${mid(g)}${teamBtn(g, 'home')}</div>`).join('')
     : '<div class="empty">No games to show for this week.</div>';
@@ -590,7 +668,7 @@ function renderScore() {
   $('#leader').textContent = best === 0 ? 'No correct picks yet'
     : (complete ? 'Week winner: ' : 'Leading: ') + profiles.filter((p, i) => W[i] === best).join(', ') + ` (${best} correct)`;
 }
-function render() { if (!profiles.length) return; renderPicks(); renderScore(); renderStandings(); }
+function render() { renderPicks(); renderScore(); renderStandings(); }
 
 // ---------------------------------------------------------------- season standings
 const weekOrder = key => { const f = key.split('-'); return (+f[1]) * 100 + (+f[2]); };
@@ -682,6 +760,8 @@ function openAcct() {
   $('#acctwho').textContent = auth ? auth.user : '';
   $('#dbsel').innerHTML = leagues.map(l => `<option${l === league ? ' selected' : ''}>${esc(l)}</option>`).join('');
   $('#dbrow').classList.toggle('hide', leagues.length < 2);
+  $('#admbox').classList.toggle('hide', !isAdmin());
+  $('#nulg').textContent = league; $('#nuerr').textContent = '';
   $('#acctdlg').showModal();
 }
 
@@ -707,9 +787,10 @@ $('#lgpass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin()
 $('#syncbtn').onclick = openAcct;
 $('#acctbtn').onclick = openAcct;
 $('#acctclose').onclick = () => $('#acctdlg').close();
-$('#acctlogout').onclick = () => { $('#acctdlg').close(); logout(''); };
+$('#acctlogout').onclick = manualLogout;
+$('#nubtn').onclick = createLogin;
 $('#dbsel').addEventListener('change', e => { $('#acctdlg').close(); if (e.target.value !== league) enterLeague(e.target.value); });
-$('#nalogout').onclick = () => logout('');
+$('#nalogout').onclick = manualLogout;
 $('#nacheck').onclick = async () => {
   try { leagues = await fetchLeagues(); setLS('leagues', leagues); await afterLogin(); }
   catch (e) { if (e.fatal) logout('Please log in again.'); else toast('Could not check right now'); }
@@ -723,6 +804,7 @@ setInterval(() => {
 
 (async function init() {
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* not supported */ }
+  try { if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) { /* not supported */ }
   fillLoginFields();
   if (auth && auth.refresh && cfg.url && cfg.key) {
     try { leagues = await fetchLeagues(); setLS('leagues', leagues); }
