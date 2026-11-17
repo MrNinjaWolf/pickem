@@ -1,0 +1,6 @@
+{
+  "extraKnownMarketplaces": {
+    "agents-dak": { "source": { "source": "github", "repo": "MrNinjaWolf/agents-dak" } }
+  },
+  "enabledPlugins": { "devkit@agents-dak": true }
+}
