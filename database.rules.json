@@ -2,18 +2,42 @@
   "rules": {
     ".read": false,
     ".write": false,
-
     "access": {
       "$user": {
-        ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === $user + '@pickem.app'",
-        ".write": false
+        ".read": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app') && auth.token.email.toLowerCase().replace('@pickem.app', '') === $user) || (auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app')",
+        ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app'",
+        "leagues": {
+          "$lg": {
+            ".validate": "newData.val() === true"
+          }
+        },
+        "$other": {
+          ".validate": false
+        }
       }
     },
-
     "leagues": {
       "$league": {
-        ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app') && root.child('access').child(auth.token.email.toLowerCase().replace('@pickem.app', '')).child('leagues').child($league).val() === true",
-        ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app') && root.child('access').child(auth.token.email.toLowerCase().replace('@pickem.app', '')).child('leagues').child($league).val() === true"
+        ".read": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app') && root.child('access').child(auth.token.email.toLowerCase().replace('@pickem.app', '')).child('leagues').child($league).val() === true) || (auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app')",
+        "profiles": {
+          "$name": {
+            ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app'",
+            ".validate": "newData.val() === true && $name.length <= 24"
+          }
+        },
+        "picks": {
+          "$week": {
+            "$profile": {
+              ".write": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app') && root.child('access').child(auth.token.email.toLowerCase().replace('@pickem.app', '')).child('leagues').child($league).val() === true && $profile.toLowerCase() === auth.token.email.toLowerCase().replace('@pickem.app', '') && root.child('leagues').child($league).child('profiles').child($profile).exists()) || ((auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app') && !newData.exists())",
+              "$game": {
+                ".validate": "newData.isString() && newData.val().length <= 4 && $game.matches(/^[0-9]+$/)"
+              }
+            }
+          }
+        },
+        "$other": {
+          ".validate": false
+        }
       }
     }
   }
