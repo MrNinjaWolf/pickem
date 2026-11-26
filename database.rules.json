@@ -118,6 +118,11 @@
         ".read": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app') || (auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app')",
         ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app'",
         ".validate": "newData.hasChildren() && (!newData.child('note').exists() || (newData.child('note').isString() && newData.child('note').val().length <= 400)) && (!newData.child('leads').exists() || newData.child('leads').isString())"
+      },
+      "cfp": {
+        ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app')",
+        ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app'",
+        ".validate": "newData.hasChildren() && (!newData.child('scoring').exists() || newData.child('scoring').val().matches(/^[A-E]$/))"
       }
     },
     "log": {
@@ -125,6 +130,40 @@
       "$id": {
         ".write": "((auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app') || (auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app')) && !data.exists() || ((auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app') && !newData.exists())",
         ".validate": "!newData.exists() || (newData.child('t').isNumber() && newData.child('who').isString() && newData.child('what').isString() && newData.child('what').val().length <= 300)"
+      }
+    },
+    "cfp": {
+      "$season": {
+        "lock": {
+          ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app')",
+          ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
+          ".validate": "newData.isNumber()"
+        },
+        "brackets": {
+          ".read": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app') || (auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app')",
+          "$lg": {
+            ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app') && root.child('access').child(auth.token.email.toLowerCase().replace('@pickem.app', '')).child('leagues').child($lg).val() === true && root.child('cfp').child($season).child('lock').exists() && root.child('cfp').child($season).child('lock').val() <= now",
+            "$profile": {
+              ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app') && $profile.toLowerCase() === auth.token.email.toLowerCase().replace('@pickem.app', '')",
+              ".write": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app') && root.child('access').child(auth.token.email.toLowerCase().replace('@pickem.app', '')).child('leagues').child($lg).val() === true && $profile.toLowerCase() === auth.token.email.toLowerCase().replace('@pickem.app', '') && root.child('leagues').child($lg).child('profiles').child($profile).exists() && root.child('cfp').child($season).child('lock').exists() && root.child('cfp').child($season).child('lock').val() > now) || ((auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app') && !newData.exists())",
+              ".validate": "newData.hasChildren(['p', 't'])",
+              "p": {
+                "$slot": {
+                  ".validate": "$slot.matches(/^(r[1-4]|q[1-4]|s[12]|f)$/) && newData.isString() && newData.val().matches(/^[0-9]{1,8}$/)"
+                }
+              },
+              "tb": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 250"
+              },
+              "t": {
+                ".validate": "newData.isNumber()"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          }
+        }
       }
     }
   }
