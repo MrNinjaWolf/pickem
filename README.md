@@ -124,9 +124,13 @@ The **NFL | CFP** switch at the top opens the CFP page (the app always opens on 
 same logins and player list as the Pick'Em database.
 
 - **Top 25:** the committee's CFP ranking during the season, the AP Top 25 the rest of the year.
+- **Projected bracket:** before the official bracket, the Bracket tab shows the field "if the season
+  ended this week" from that week's Top 25 (five highest-ranked conference champions plus the next
+  seven, seeded by ranking), with arrows to look back at earlier weeks.
 - **Bracket:** once ESPN lists all 12 playoff teams (Selection Sunday), everyone with an email gets
   an email and a phone notification. Each player picks all 11 games plus a tiebreaker (title-game
-  total points). Brackets lock at the first kickoff (in the database rules too) and stay hidden
+  total points), one game at a time with each matchup's stats (like the NFL picks) or on the full
+  bracket, which scrolls sideways. Brackets lock at the first kickoff (in the database rules too) and stay hidden
   from other players until then.
 - **Leaderboard:** points, then most points still possible, then the closest tiebreaker.
 - **Admin > College Football Playoff:** turn the page on or off, choose the scoring (classic

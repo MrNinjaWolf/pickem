@@ -53,7 +53,7 @@ export function playoffGames(events) {
         const t = x.team || {}, seed = (x.curatedRank || {}).current;
         const known = !!t.id && +t.id > 0 && !/^tbd$/i.test(t.displayName || t.abbreviation || '');
         return known ? {id: String(t.id), abbr: t.abbreviation || '', name: t.shortDisplayName || t.displayName || '', logo: t.logo || '',
-          color: t.color ? '#' + t.color : '#334155', seed: seed >= 1 && seed <= 12 ? seed : null, score: parseInt(x.score, 10) || 0} : null;
+          color: t.color ? '#' + t.color : '#334155', seed: seed >= 1 && seed <= 12 ? seed : null, score: parseInt(x.score, 10) || 0, home: x.homeAway === 'home'} : null;
       }).filter(Boolean)});
   }
   return out.sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
@@ -129,4 +129,86 @@ export function leaderboard(br, brackets, scheme) {
   let rank = 0;
   rows.forEach((r, i) => { const q = rows[i - 1]; if (!q || q.pts !== r.pts || q.max !== r.max || q.off !== r.off) rank = i + 1; r.rank = rank; });
   return rows;
+}
+
+// ---------------------------------------------------------------- projected bracket ("if the season ended today")
+// The 12-team field: the five highest-ranked conference champions get in, plus the next seven highest-ranked
+// teams. Before the title games, each conference's highest-ranked team is treated as its champion. The 12 are
+// seeded in ranking order (straight seeding, as since 2025). Independents (Notre Dame) can't be champions.
+
+/** Conference of every FBS team, from ESPN's standings: {teamId: {key, name}}. */
+export function confMapFrom(standings) {
+  const out = {};
+  const walk = (c, conf) => {
+    const me = conf || {key: c.abbreviation || c.name || '', name: c.shortName || c.abbreviation || c.name || ''};
+    for (const e of ((c.standings || {}).entries) || []) if (e.team && e.team.id) out[String(e.team.id)] = me;
+    for (const k of c.children || []) walk(k, me);
+  };
+  for (const c of (standings && standings.children) || []) walk(c, null);
+  return out;
+}
+const isConference = c => !!c && !!c.key && !/^ind/i.test(c.key);
+
+/** Each conference's best team by overall record (then point differential): its likely champion when
+ *  no team from it is ranked. {confKey: team} */
+export function confLeadersFrom(standings) {
+  const best = {};
+  const walk = (c, conf) => {
+    const me = conf || {key: c.abbreviation || c.name || '', name: c.shortName || c.abbreviation || c.name || ''};
+    for (const e of ((c.standings || {}).entries) || []) {
+      const t = e.team || {}, st = {};
+      for (const x of e.stats || []) if (!(x.name in st)) st[x.name] = x.displayValue;   // the first block is the overall record
+      const [w, l] = String(st.overall || '0-0').split('-').map(Number), pct = w + l ? w / (w + l) : 0, diff = parseInt(st.pointDifferential, 10) || 0;
+      const logo = ((t.logos || [])[0] || {}).href || '';
+      const cand = {id: String(t.id), abbr: t.abbreviation || '', name: t.location || t.shortDisplayName || t.displayName || '', logo, color: '#334155', rank: null, rec: st.overall || '', conf: me.name, pct, diff};
+      const cur = best[me.key];
+      if (isConference(me) && (!cur || pct > cur.pct || (pct === cur.pct && diff > cur.diff))) best[me.key] = cand;
+    }
+    for (const k of c.children || []) walk(k, me);
+  };
+  for (const c of (standings && standings.children) || []) walk(c, null);
+  return best;
+}
+
+/** A ranking entry as a bracket team. */
+export function rankedTeam(r) {
+  const t = r.team || {}, logo = ((t.logos || []).find(l => (l.rel || []).includes('default')) || (t.logos || [])[0] || {}).href || '';
+  return {id: String(t.id), abbr: t.abbreviation || '', name: t.location || t.nickname || t.name || '', logo, color: t.color ? '#' + t.color : '#334155', rank: r.current, rec: r.recordSummary || ''};
+}
+
+/** The projected field from a Top 25: {field: [12 teams with seed, conf, auto], out: [next four], bumped, champs}.
+ *  leaders (optional, from confLeadersFrom) fill the five champion spots when fewer than five champions are ranked. */
+export function projectField(ranks, confs, leaders) {
+  const list = [...(ranks || [])].sort((a, b) => a.current - b.current).map(rankedTeam);
+  const seen = new Set(), champs = [];
+  for (const t of list) {
+    const c = (confs || {})[t.id];
+    t.conf = c ? c.name : '';
+    if (isConference(c) && !seen.has(c.key)) { seen.add(c.key); champs.push(t); t.champ = true; }
+  }
+  const auto = champs.slice(0, 5);
+  if (auto.length < 5 && leaders) {                   // the best champions of conferences with nobody ranked
+    const have = new Set(list.map(t => ((confs || {})[t.id] || {}).key).filter(Boolean));
+    const extra = Object.entries(leaders).filter(([k, t]) => !have.has(k) && !list.some(x => x.id === t.id)).map(([, t]) => ({...t, champ: true}))
+      .sort((a, b) => b.pct - a.pct || b.diff - a.diff);
+    auto.push(...extra.slice(0, 5 - auto.length));
+  }
+  auto.forEach(t => { t.auto = true; });
+  const field = [...auto];
+  for (const t of list) { if (field.length >= 12) break; if (!field.includes(t)) field.push(t); }
+  field.sort((a, b) => (a.rank || 99) - (b.rank || 99)).forEach((t, i) => { t.seed = i + 1; });
+  const rest = list.filter(t => !field.includes(t));
+  return {field, out: rest.slice(0, 4), bumped: list.slice(0, 12).filter(t => !field.includes(t)), champs: auto.length};
+}
+
+/** A bracket (same shape as bracketFrom) for a projected field: first-round games and byes, nothing played. */
+export function projectedBracket(field) {
+  const seeds = {}, teams = {};
+  for (const t of field) { seeds[t.seed] = t; teams[t.id] = t; }
+  const slot = {};
+  for (const k of ORDER) {
+    const [x, y] = SLOTS[k], side = s => typeof s === 'number' ? (seeds[s] || {}).id || null : null;
+    slot[k] = {game: null, a: side(x), b: side(y), winner: null};
+  }
+  return {games: [], seeds, teams, set: field.length === 12, projected: true, lock: null, slot, roundsDone: [false, false, false, false], finalTotal: null};
 }

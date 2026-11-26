@@ -71,6 +71,7 @@ main{max-width:760px;margin:0 auto}
 .rk25{list-style:none;margin:6px 0 0;padding:0;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);overflow:hidden}
 .rk25 li{display:grid;grid-template-columns:30px 30px 1fr auto 42px;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line)}
 .rk25 li:last-child{border-bottom:0}
+.rk25 li[style]{box-shadow:inset 4px 0 0 var(--c);background:linear-gradient(90deg,color-mix(in srgb,var(--c) 18%,transparent),transparent 60%)}
 .rk25 .n{font-weight:800;font-size:16px;text-align:center}
 .rk25 img{width:30px;height:30px;object-fit:contain}
 .rk25 .tm b{display:block;font-size:15px}.rk25 .tm span{font-size:12px;color:var(--muted)}
@@ -91,7 +92,7 @@ main{max-width:760px;margin:0 auto}
 .ct:disabled{cursor:default}
 .mu .real{padding:6px 12px;font-size:12px;color:var(--muted);border-top:1px dashed var(--line)}
 .mu .real b{color:var(--text)}
-.champ{display:flex;align-items:center;gap:12px;padding:14px;border-radius:var(--radius);border:1px solid var(--line);background:linear-gradient(135deg,rgba(255,197,61,.14),var(--surface))}
+.champ{display:flex;align-items:center;gap:12px;padding:14px;border-radius:var(--radius);border:1px solid var(--line);background:linear-gradient(135deg,color-mix(in srgb,var(--c,#ffc53d) 50%,transparent),var(--surface) 85%)}
 .champ img{width:44px;height:44px;object-fit:contain}
 .champ b{font-size:18px}.champ span{display:block;font-size:12px;color:var(--muted)}
 .tbrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;font-size:14px}
@@ -104,6 +105,38 @@ main{max-width:760px;margin:0 auto}
 .lbt td img{width:20px;height:20px;object-fit:contain;vertical-align:middle;margin-right:5px}
 .cfpinfo{padding:16px;border-radius:var(--radius);border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:14px;margin-top:8px}
 .cfpinfo b{color:var(--text)}
+.pills{display:flex;gap:6px;padding:8px 4px 0}
+.pills button{flex:1;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-weight:800;font-size:13px}
+.pills button.on{color:#fff;border-color:transparent;background:linear-gradient(135deg,rgba(239,68,68,.95),rgba(185,28,28,.95))}
+.whos{padding:10px 4px 0;display:flex;gap:6px;overflow-x:auto;flex-wrap:nowrap}
+.whos button{flex:none}
+.wzteam.sel{box-shadow:0 0 0 2px var(--gold) inset}
+.wzteam .sub.adv{color:var(--gold);font-weight:700}
+.wkpick{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;gap:8px;margin-top:8px;text-align:center}
+.wkpick b{display:block;font-size:15px}.wkpick span{font-size:12px;color:var(--muted)}
+.tree{display:flex;gap:10px;overflow-x:auto;padding:8px 16px 14px;margin:0 -12px;scroll-padding:0 16px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+.tree::after{content:'';flex:none;width:6px}
+.tcol{flex:none;width:158px;display:flex;flex-direction:column;scroll-snap-align:start}
+.tcol h5{margin:0 0 6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:center}
+.tbs{flex:1;display:flex;flex-direction:column;justify-content:space-around;gap:10px;min-height:520px}
+.tbx{border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
+.trw{display:grid;grid-template-columns:18px 20px 1fr auto 14px;align-items:center;gap:6px;width:100%;padding:7px 8px;border:0;background:none;color:var(--text);font:inherit;font-weight:700;font-size:13px;text-align:left}
+.trw + .trw{border-top:1px solid var(--line)}
+.trw .sd{font-size:11px;color:var(--muted);text-align:center}
+.trw img,.trw i{width:20px;height:20px;object-fit:contain}
+.trw .sc{font-variant-numeric:tabular-nums;color:var(--muted)}
+.trw .mk{font-size:11px;color:var(--gold);text-align:right}
+.trw[style]{background:linear-gradient(90deg,color-mix(in srgb,var(--c) 24%,transparent),transparent 75%);box-shadow:inset 4px 0 0 var(--c)}
+.trw.sel{background:linear-gradient(90deg,color-mix(in srgb,var(--c) 62%,transparent),color-mix(in srgb,var(--c) 12%,transparent));box-shadow:inset 4px 0 0 var(--gold)}
+.trw.right .mk{color:var(--green)}.trw.wrong,.trw.dead{opacity:.55}.trw.wrong .nm,.trw.dead .nm{text-decoration:line-through}.trw.wrong .mk,.trw.dead .mk{color:var(--bad)}
+.trw.ph{color:var(--muted);font-weight:600;font-size:11px;grid-template-columns:18px 1fr}
+.trw.tap{cursor:pointer}.trw.tap:active{background:var(--surface2)}
+.tft{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:3px 8px;border-top:1px dashed var(--line);font-size:10px;color:var(--muted);min-height:22px}
+.tft span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tft .linkbtn{font-size:11px;color:var(--gold);padding:0}
+.tch{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px;border-radius:12px;border:1px solid var(--line);background:linear-gradient(160deg,color-mix(in srgb,var(--c,#ffc53d) 55%,transparent),var(--surface) 80%);text-align:center;box-shadow:inset 0 3px 0 var(--gold)}
+.tch img{width:48px;height:48px;object-fit:contain}.tch span{font-size:11px;color:var(--muted)}
+.rk25 em.ab{font-style:normal;font-size:10px;font-weight:800;color:var(--gold);letter-spacing:.04em}
 .view{animation:viewIn .35s var(--ease)}
 .view.from-r{animation:slideFromR .45s var(--glide) both}
 .view.from-l{animation:slideFromL .45s var(--glide) both}
@@ -1914,7 +1947,9 @@ function moveTabIndicator() {
 // Top 25 (the committee's CFP ranking during the season, the AP poll otherwise), then a bracket challenge
 // once the playoff field is set. The bracket logic lives in cfp-core.js (shared with the email job).
 const CFP_DEFAULTS = {on: true, scoring: 'A', remind: true, rounds: true};
-const cfp = {tab: 'top', chosen: false, season: 0, polls: null, br: null, mine: null, all: null, draft: null, view: null,
+const cfp = {tab: 'top', chosen: false, season: 0, polls: null, br: null, mine: null, all: null, draft: null,
+  sub: null, focus: null, back: null, skipped: new Set(), who: null,          // Bracket tab: Pick / Full bracket, the game shown, whose bracket
+  proj: {polls: {}, type: null, week: 0, latest: 0, confs: null, leaders: null},   // projected bracket, by ranking week
   s: {...CFP_DEFAULTS}, at: 0, busy: false, saveMsg: '', saveTimer: null};
 let K = null;                                        // cfp-core.js, loaded the first time the CFP page opens
 const cfpCore = async () => K || (K = await import('./cfp-core.js'));
@@ -1950,7 +1985,7 @@ function setMode(m) {
   }
   window.scrollTo(0, 0);
 }
-function setCfpTab(t) { cfp.tab = t; cfp.chosen = true; cfp.view = null; renderCfp(); window.scrollTo(0, 0); }
+function setCfpTab(t) { cfp.tab = t; cfp.chosen = true; cfp.focus = null; renderCfp(); window.scrollTo(0, 0); }
 
 async function loadCfp(force) {
   if (cfp.busy || (!force && Date.now() - cfp.at < 60000)) return;
@@ -2006,75 +2041,256 @@ function cfpTopHtml() {
     const t = r.team || {}, logo = ((t.logos || [])[0] || {}).href || t.logo || '';
     const prev = r.previous || 0, mv = prev ? prev - r.current : null;
     const tr = mv === null ? '<span class="mv nw">NEW</span>' : mv > 0 ? `<span class="mv up">▲${mv}</span>` : mv < 0 ? `<span class="mv dn">▼${-mv}</span>` : '<span class="mv">–</span>';
-    return `<li><span class="n">${r.current}</span>${logo ? `<img src="${esc(logo)}" alt="" loading="lazy">` : '<span></span>'}` +
+    return `<li style="--c:${esc(t.color ? '#' + t.color : '#334155')}"><span class="n">${r.current}</span>${logo ? `<img src="${esc(logo)}" alt="" loading="lazy">` : '<span></span>'}` +
       `<span class="tm"><b>${esc(t.location || t.name || '')}</b><span>${esc(t.nickname || t.name || '')}</span></span><span class="rec">${esc(r.recordSummary || '')}</span>${tr}</li>`;
   }).join('');
   const set = cfp.br && cfp.br.set;
   return `<div class="cfphead"><h2>${name}</h2><p>${esc(week || '')}${p.date ? ' • ' + esc(fmtDay(p.date)) : ''}</p></div>` +
-    (set ? `<div class="cfpinfo" style="margin-bottom:10px">The playoff bracket is set. <b>Pick yours on the Bracket tab</b>${cfpLocked() ? '' : ' before ' + esc(fmtWhen(cfp.br.lock))}.</div>` : '') +
+    (set ? `<div class="cfpinfo" style="margin-bottom:10px">The playoff bracket is set. <b>Pick yours on the Bracket tab</b>${cfpLocked() ? '' : ' before ' + esc(fmtWhen(cfp.br.lock))}.</div>`
+      : '<div class="cfpinfo" style="margin-bottom:10px">See what the playoff would look like from these rankings: <b>Bracket</b> tab.</div>') +
     `<ul class="rk25">${rows}</ul>`;
 }
 
-// ---- Bracket
+// ---- Bracket tab
+// Before the official bracket: a projected bracket from that week's Top 25 (arrows step back through the weeks).
+// After it: "Pick" (one game at a time, with each matchup's stats, like the NFL picks) and "Full bracket"
+// (the whole bracket, scrolling sideways; after the lock, anyone's).
 const SRC = {r1: '#8 / #9', r2: '#5 / #12', r3: '#6 / #11', r4: '#7 / #10'};
 function placeholder(src) {
   if (typeof src === 'number') return 'Seed #' + src;
-  if (src[0] === 'r') return 'Winner of ' + SRC[src];
-  return 'Pick the ' + (src[0] === 'q' ? 'quarterfinal' : 'semifinal') + ' first';
+  if (src[0] === 'r') return 'Winner ' + SRC[src];
+  return src[0] === 'q' ? 'QF winner' : 'SF winner';
 }
+const cfpPicksOf = who => who ? (((cfp.all || {})[who] || {}).p || {}) : ((cfp.draft || {}).p || {});
+
 function cfpBracketHtml() {
-  const br = cfp.br, C = K, me = myProfile();
-  if (!br || !br.set) {
-    return '<div class="cfphead"><h2>Bracket challenge</h2></div><div class="cfpinfo">The 12-team playoff bracket is announced on <b>Selection Sunday</b>. ' +
-      'When it\'s out, everyone gets an email and a notification, and you can pick every game here' + (br && br.lock ? ` until the first kickoff, <b>${esc(fmtWhen(br.lock))}</b>` : ' until the first kickoff') +
-      '.<br><br>Until then, keep an eye on the <b>Top 25</b>.</div>';
-  }
-  const locked = cfpLocked(), viewing = cfp.view;
-  if (!me && !viewing) return '<div class="cfpinfo">Your name isn\'t on this database\'s player list, so you can\'t make a bracket. Ask the administrator to add it.</div>';
-  const b = viewing ? ((cfp.all || {})[viewing] || {}) : (cfp.draft || {p: {}});
-  const picks = b.p || {}, editable = !viewing && !locked;
-  const sides = C.pickedSides(br, picks), sc = C.scoreBracket(br, picks, cfp.s.scoring);
+  const br = cfp.br;
+  if (!br || !br.set) return projectionHtml();
+  const me = myProfile(), locked = cfpLocked();
+  if (!cfp.sub) cfp.sub = locked || !me ? 'full' : 'pick';
+  if (cfp.sub === 'pick' && (locked || !me)) cfp.sub = 'full';
+  const pills = locked || !me ? '' : `<div class="pills">${!locked && me ? `<button type="button" data-sub="pick"${cfp.sub === 'pick' ? ' class="on"' : ''}>Pick</button>` : ''}` +
+    `<button type="button" data-sub="full"${cfp.sub === 'full' ? ' class="on"' : ''}>Full bracket</button></div>`;
+  return pills + (cfp.sub === 'pick' ? cfpWizardHtml() : fullBracketHtml());
+}
+
+// ---- one game at a time
+function cfpWizardHtml() {
+  const br = cfp.br, C = K, picks = cfpPicksOf(null), sides = C.pickedSides(br, picks);
   const n = C.ORDER.filter(k => picks[k]).length;
-  let head = `<div class="cfphead"><h2>${viewing ? esc(viewing) + '’s bracket' : 'Your bracket'}</h2>`;
-  if (viewing) head += `<p><button class="linkbtn" data-cfpback type="button">‹ Back to the leaderboard</button></p>`;
-  head += '<div class="cfpbar">' + (locked
-    ? `<span class="stat">${sc.pts} <i>points</i></span><span class="stat">${sc.max} <i>max possible</i></span><span class="stat" style="color:var(--green)">${sc.right} <i>right</i></span><span class="stat" style="color:var(--bad)">${sc.wrong} <i>wrong</i></span>`
-    : `<span class="stat">${n}/11 <i>picked</i></span><span class="stat"><i>locks</i> ${esc(fmtWhen(br.lock))}</span>`) + '</div>';
-  head += `<p>${editable ? 'Tap a team to move it on. ' + esc(cfp.saveMsg || 'Your picks save as you go.') : locked ? 'Brackets are locked.' : ''}</p></div>`;
-  let html = head;
-  for (let r = 0; r < 4; r++) {
-    html += `<div class="brnd">${C.ROUND_NAMES[r]}</div>`;
-    for (const k of C.ORDER.filter(x => C.roundOf(x) === r)) {
-      const real = br.slot[k], g = real.game, [x, y] = C.SLOTS[k];
-      const meta = g ? `<span>${esc(g.bowl || C.ROUND_NAMES[r])}</span><span>${esc(g.state === 'pre' ? fmtWhen(g.date) : g.detail)}</span>` : `<span>${C.ROUND_NAMES[r]}</span><span></span>`;
-      const team = (id, src) => {
-        if (!id) return `<button class="ct ph" type="button" disabled><span></span><span></span><span>${esc(placeholder(src))}</span><span></span></button>`;
-        const t = br.teams[id] || {}, picked = picks[k] === id, res = picked ? sc.by[k] : '';
-        const cls = 'ct' + (picked ? ' sel' : '') + (res === 'right' || res === 'wrong' || res === 'dead' ? ' ' + res : '');
-        const mark = picked ? (res === 'right' ? '✓' : res === 'wrong' || res === 'dead' ? '✗' : 'PICK') : '';
-        return `<button class="${cls}" type="button" data-cs="${k}" data-ct="${esc(id)}" style="--c:${esc(t.color || '#334155')}"${editable ? '' : ' disabled'}>` +
-          `<span class="sd">${t.seed || ''}</span>${t.logo ? `<img src="${esc(t.logo)}" alt="" loading="lazy">` : '<span></span>'}<span class="nm">${esc(t.name || t.abbr || '')}</span><span class="mk">${mark}</span></button>`;
-      };
-      let realLine = '';
-      if (g && g.teams.length === 2 && (g.state !== 'pre' || locked)) {
-        const [p0, p1] = g.teams;
-        realLine = `<div class="real">${g.state === 'pre' ? 'Matchup' : g.state === 'in' ? 'Live' : 'Final'}: <b>${esc(p0.abbr)} ${g.state === 'pre' ? '' : p0.score}</b> – <b>${g.state === 'pre' ? '' : p1.score} ${esc(p1.abbr)}</b>${g.state === 'in' ? ' • ' + esc(g.detail) : ''}</div>`;
-      }
-      html += `<div class="mu"><div class="mt">${meta}</div>${team(sides[k][0], x)}${team(sides[k][1], y)}${realLine}</div>`;
-    }
+  const known = k => sides[k][0] && sides[k][1];
+  const open = C.ORDER.filter(k => known(k) && !picks[k] && !cfp.skipped.has(k));
+  const k = cfp.focus && known(cfp.focus) ? cfp.focus : open[0];
+  const head = `<div class="cfphead"><h2>Your bracket</h2><div class="cfpbar"><span class="stat">${n}/11 <i>picked</i></span>` +
+    `<span class="stat"><i>locks</i> ${esc(fmtWhen(br.lock))}</span></div><p id="cfpsave">${esc(cfp.saveMsg || 'Your picks save as you go.')}</p></div>`;
+  if (!k) {
+    const ch = picks.f && br.teams[picks.f];
+    if (n === 11) return head + `<div class="wzbox" style="margin-top:4px"><h4>Bracket complete</h4>${champHtml(ch)}${tiebreakHtml(cfp.draft, true)}` +
+      `<div class="wzfoot"><button type="button" class="btn alt" data-sub="full">See the full bracket</button></div></div>`;
+    return head + `<div class="cfpinfo">You skipped ${cfp.skipped.size} game${cfp.skipped.size === 1 ? '' : 's'}. <div class="wzfoot"><button type="button" class="btn alt" data-unskip>Pick them now</button>` +
+      `<button type="button" class="btn alt" data-sub="full">Full bracket</button></div></div>`;
   }
-  const ch = picks.f && br.teams[picks.f];
-  html += `<div class="brnd">Champion</div><div class="champ">${ch ? `${ch.logo ? `<img src="${esc(ch.logo)}" alt="">` : ''}<div><b>${esc(ch.name)}</b><span>#${ch.seed} seed</span></div>` : '<div><b>No champion picked yet</b><span>Pick the national championship game above.</span></div>'}</div>`;
-  html += `<div class="tbrow"><span>Tiebreaker: total points in the title game</span>` +
-    (editable ? `<input id="cfptb" type="number" inputmode="numeric" min="0" max="250" placeholder="e.g. 52" value="${typeof b.tb === 'number' ? b.tb : ''}">` : `<b>${typeof b.tb === 'number' ? b.tb : '—'}</b>`) + '</div>';
+  const [a, b] = sides[k], r = C.roundOf(k), real = br.slot[k].game;
+  const realHere = real && real.teams.length === 2 && real.teams.some(t => t.id === a) && real.teams.some(t => t.id === b) ? real : null;
+  // the real game's home team goes on the right (ESPN's win chance is given that way); otherwise the higher seed
+  let [left, right] = [a, b].map(id => br.teams[id]).sort((x, y) => (x.seed || 99) - (y.seed || 99));
+  if (realHere) { const h = realHere.teams.find(t => t.home); if (h && h.id === left.id) [left, right] = [right, left]; }
+  const gg = {id: 'cfp-' + k, away: cfpGameTeam(left), home: cfpGameTeam(right)};
+  const d = matchData(k, realHere, left, right);
+  const g0 = realHere || real, when = g0 ? (g0.bowl ? g0.bowl + ' \u2022 ' : '') + (realHere ? fmtWhen(g0.date) : fmtDay(g0.date)) : '';
+  const btn = t => {
+    const picked = picks[k] === t.id, info = cfpTeamInfo(t.id);
+    if (!info) loadCfbTeam(t.id);                   // record and conference standing
+    return `<button type="button" class="wzteam${picked ? ' sel' : ''}" data-cs="${k}" data-ct="${esc(t.id)}" style="--c:${esc(t.color)};--fg:${contrast(t.color)}">` +
+      (t.logo ? `<img src="${esc(t.logo)}" alt="">` : '') + `<span class="ab">${esc(t.abbr)}</span><span class="nm">${esc(t.name)}</span>` +
+      `<span class="rec">${esc((info && info.rec) || t.rec || '–')}</span><span class="sub">#${t.seed} seed${info && info.standing ? ' • ' + esc(info.standing) : ''}</span>` +
+      (typeof C.SLOTS[k][sides[k].indexOf(t.id)] === 'string' ? '<span class="sub adv">\u2714 Advanced in your bracket</span>' : '') +
+      `<span class="go">${picked ? 'PICKED' : 'PICK'}</span></button>`;
+  };
+  return head + `<div class="wz"><div class="wzhead"><b>${esc(C.ROUND_NAMES[r])}</b><span>${esc(when)}</span></div>` +
+    `<div class="wzbar"><span style="width:${n / 11 * 100}%"></span></div>` +
+    `<div class="wzteams">${btn(left)}<div class="wzat">vs</div>${btn(right)}</div>` +
+    (d === 'loading' ? '<div class="wzwait loading">Loading stats…</div>' : d === 'fail' ? '<div class="wzwait">Couldn\'t load stats from ESPN. Try Refresh.</div>'
+      : oddsBox(gg, d) + compareBox(gg, d) + leadersBox(gg, d) + injuryBox(gg, d) + formBox(gg, d)) +
+    `<div class="wzfoot">${picks[k] ? '' : `<button type="button" class="btn alt" data-wzskip="${k}">Skip for now</button>`}` +
+    `<button type="button" class="btn alt" data-sub="full">Full bracket</button></div></div>`;
+}
+const cfpGameTeam = t => ({abbr: t.abbr, name: t.name, logo: t.logo, color: t.color || '#334155'});
+const champHtml = ch => `<div class="champ"${ch ? ` style="--c:${esc(ch.color || '#334155')}"` : ''}>${ch ? `${ch.logo ? `<img src="${esc(ch.logo)}" alt="">` : ''}<div><b>${esc(ch.name)}</b><span>Your champion • #${ch.seed} seed</span></div>`
+  : '<div><b>No champion picked yet</b><span>Pick the national championship game.</span></div>'}</div>`;
+const tiebreakHtml = (b, editable) => `<div class="tbrow"><span>Tiebreaker: total points in the title game</span>` +
+  (editable ? `<input id="cfptb" type="number" inputmode="numeric" min="0" max="250" placeholder="e.g. 52" value="${typeof (b || {}).tb === 'number' ? b.tb : ''}">` : `<b>${typeof (b || {}).tb === 'number' ? b.tb : '—'}</b>`) + '</div>';
+
+// ---- matchup stats: ESPN's game preview when the real game is set, otherwise each team's season numbers
+const cfpLoads = new Set(), cfpFails = new Map();
+function matchData(k, real, a, b) {
+  if (real && real.state === 'pre') {
+    const c = LS('csum.' + real.id);
+    if (c && Date.now() - c.t < SUM_TTL) return c.d;
+    loadCfpSummary(real.id);
+    return c ? c.d : cfpFails.has(real.id) ? 'fail' : 'loading';
+  }
+  const ta = cfpTeamInfo(a.id), tb = cfpTeamInfo(b.id);
+  if (!ta) loadCfbTeam(a.id); if (!tb) loadCfbTeam(b.id);
+  if (!ta || !tb) return cfpFails.has(a.id) || cfpFails.has(b.id) ? 'fail' : 'loading';
+  return {stats: {[a.abbr]: ta.stats, [b.abbr]: tb.stats}, leaders: {}, last5: {[a.abbr]: ta.last5, [b.abbr]: tb.last5}, prob: null};
+}
+async function loadCfpSummary(id) {
+  if (cfpLoads.has('s' + id) || Date.now() - (cfpFails.get(id) || 0) < 60000) return;
+  cfpLoads.add('s' + id);
+  try {
+    const r = await fetch(K.ESPN_CFB + '/summary?event=' + encodeURIComponent(id));
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    setLS('csum.' + id, {t: Date.now(), d: readSummary(await r.json())}); cfpFails.delete(id);
+  } catch (e) { cfpFails.set(id, Date.now()); }
+  cfpLoads.delete('s' + id);
+  rerenderCfpPick();
+}
+const cfpTeamInfo = id => { const c = LS('cfbt.' + id); return c && Date.now() - c.t < SUM_TTL ? c.d : null; };
+async function loadCfbTeam(id) {
+  if (cfpLoads.has('t' + id) || Date.now() - (cfpFails.get(id) || 0) < 60000) return;
+  cfpLoads.add('t' + id);
+  try {
+    const get = u => fetch(u).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+    const base = K.ESPN_CFB + '/teams/' + encodeURIComponent(id);
+    const [tm, st, sch] = await Promise.all([get(base), get(base + '/statistics'), get(base + '/schedule').catch(() => null)]);
+    const team = tm.team || {}, rec = (((team.record || {}).items) || [])[0] || {}, rs = {};
+    for (const x of rec.stats || []) rs[x.name] = x.value;
+    const val = (cats, cat, name) => { const c = (cats || []).find(x => x.name === cat); const s = c && c.stats.find(x => x.name === name); return s ? s.displayValue : undefined; };
+    const mine = ((st.results || {}).stats || {}).categories, opp = (st.results || {}).opponent;
+    const o = {};
+    if (rs.avgPointsFor !== undefined) o.totalPointsPerGame = rs.avgPointsFor.toFixed(1);
+    if (rs.avgPointsAgainst !== undefined) o.totalPointsPerGameAllowed = rs.avgPointsAgainst.toFixed(1);
+    const add = (key, cat, name, from) => { const v = val(from, cat, name); if (v !== undefined) o[key] = v; };
+    add('yardsPerGame', 'passing', 'yardsPerGame', mine); add('yardsPerGameAllowed', 'passing', 'yardsPerGame', opp);
+    add('passingYardsPerGame', 'passing', 'netPassingYardsPerGame', mine); add('rushingYardsPerGame', 'rushing', 'rushingYardsPerGame', mine);
+    add('passingYardsPerGameAllowed', 'passing', 'netPassingYardsPerGame', opp); add('rushingYardsPerGameAllowed', 'rushing', 'rushingYardsPerGame', opp);
+    const last5 = ((sch && sch.events) || []).filter(e => (((e.competitions || [])[0] || {}).status || e.status || {}).type?.completed !== false)
+      .map(e => { const c = (e.competitions || [])[0] || {}, me = (c.competitors || []).find(x => String((x.team || {}).id) === String(id)); return me && typeof me.winner === 'boolean' ? {t: Date.parse(e.date), r: me.winner ? 'W' : 'L'} : null; })
+      .filter(Boolean).sort((x, y) => x.t - y.t).slice(-5).map(x => x.r);
+    setLS('cfbt.' + id, {t: Date.now(), d: {stats: o, last5, rec: rec.summary || '', standing: team.standingSummary || ''}}); cfpFails.delete(id);
+  } catch (e) { cfpFails.set(id, Date.now()); }
+  cfpLoads.delete('t' + id);
+  rerenderCfpPick();
+}
+function rerenderCfpPick() {                          // only the pick screen shows stats; keep the teams where they are
+  if (mode !== 'cfp' || cfp.tab !== 'br' || cfp.sub !== 'pick') return;
+  const el = document.querySelector('#cfpbox .wzteams'), top = el ? el.getBoundingClientRect().top : null;
+  renderCfp();
+  const now = document.querySelector('#cfpbox .wzteams');
+  if (top !== null && now) window.scrollBy(0, now.getBoundingClientRect().top - top);
+}
+
+// ---- the whole bracket, scrolling sideways
+function fullBracketHtml() {
+  const br = cfp.br, C = K, me = myProfile(), locked = cfpLocked();
+  const players = locked ? Object.keys(cfp.all || {}).sort(cmp) : [];
+  if (cfp.who && !players.includes(cfp.who)) cfp.who = null;
+  const who = cfp.who && cfp.who !== me ? cfp.who : null;
+  const b = who ? (cfp.all || {})[who] : cfp.draft, picks = (b || {}).p || {}, editable = !who && !locked && !!me;
+  const sc = C.scoreBracket(br, picks, cfp.s.scoring), n = C.ORDER.filter(k => picks[k]).length;
+  let html = '';
+  if (players.length) html += `<div class="chips whos">${(me && !players.includes(me) ? [me] : []).concat(players).map(p =>
+    `<button type="button" data-who="${esc(p)}" class="${(who || me) === p ? 'on' : ''}">${esc(p === me ? 'You' : p)}</button>`).join('')}</div>`;
+  html += `<div class="cfphead"><h2>${who ? esc(who) + '’s bracket' : me ? 'Your bracket' : 'The bracket'}</h2><div class="cfpbar">` + (locked
+    ? `<span class="stat">${sc.pts} <i>points</i></span><span class="stat">${sc.max} <i>max possible</i></span><span class="stat" style="color:var(--green)">${sc.right} <i>right</i></span><span class="stat" style="color:var(--bad)">${sc.wrong} <i>wrong</i></span>`
+    : `<span class="stat">${n}/11 <i>picked</i></span><span class="stat"><i>locks</i> ${esc(fmtWhen(br.lock))}</span>`) + '</div>' +
+    `<p id="cfpsave">${editable ? 'Tap a team to pick it, or Stats for the matchup. ' + esc(cfp.saveMsg || '') : locked ? 'Brackets are locked. Scroll sideways to see every round.' : ''}</p></div>`;
+  html += treeHtml(br, picks, {editable, sc, stats: editable});
+  html += `<div style="padding:0 4px">${tiebreakHtml(b, editable)}</div>`;
   return html;
 }
+/** The bracket as columns: First Round | Quarterfinals | Semifinals | Championship | Champion. */
+function treeHtml(br, picks, {editable = false, sc = null, stats = false, proj = false} = {}) {
+  const C = K, sides = proj ? null : C.pickedSides(br, picks);
+  const row = (k, id, src) => {
+    if (!id) return `<div class="trw ph"><span class="sd"></span><span class="nm">${esc(proj && src && typeof src !== 'number' ? 'TBD' : placeholder(src))}</span></div>`;
+    const t = br.teams[id] || {}, picked = !proj && picks[k] === id, res = picked && sc ? sc.by[k] : '';
+    const g = br.slot[k].game, gt = g && g.state !== 'pre' && g.teams.find(x => x.id === id);
+    const mark = picked ? (res === 'right' ? '✓' : res === 'wrong' || res === 'dead' ? '✗' : '●') : '';
+    const cls = 'trw' + (picked ? ' sel' : '') + (res === 'right' || res === 'wrong' || res === 'dead' ? ' ' + res : '') + (editable ? ' tap' : '');
+    return `<${editable ? 'button type="button"' : 'div'} class="${cls}" data-cs="${k}" data-ct="${esc(id)}" style="--c:${esc(t.color || '#334155')}">` +
+      `<span class="sd">${t.seed || ''}</span>${t.logo ? `<img src="${esc(t.logo)}" alt="" loading="lazy">` : '<i></i>'}<span class="nm">${esc(t.abbr || t.name || '')}</span>` +
+      `<span class="sc">${gt ? gt.score : ''}</span><span class="mk">${mark}</span></${editable ? 'button' : 'div'}>`;
+  };
+  const box = k => {
+    const [x, y] = C.SLOTS[k], s = br.slot[k], [a, b] = proj ? [s.a, s.b] : sides[k], g = s.game;
+    const foot = g ? `${esc(g.bowl || (g.state === 'pre' ? fmtDay(g.date) : g.detail))}${g.state === 'in' ? ' • LIVE' : ''}` : '';
+    return `<div class="tbx">${row(k, a, x)}${row(k, b, y)}<div class="tft"><span>${foot}</span>${stats && a && b ? `<button type="button" class="linkbtn" data-wz="${k}">Stats</button>` : ''}</div></div>`;
+  };
+  const col = (title, ks) => `<div class="tcol"><h5>${title}</h5><div class="tbs">${ks.map(box).join('')}</div></div>`;
+  const ch = !proj && picks.f && br.teams[picks.f];
+  return `<div class="tree">${col('First Round', ['r1', 'r2', 'r3', 'r4'])}${col('Quarterfinals', ['q1', 'q2', 'q3', 'q4'])}` +
+    `${col('Semifinals', ['s1', 's2'])}${col('Championship', ['f'])}<div class="tcol"><h5>Champion</h5><div class="tbs"><div class="tch"${ch ? ` style="--c:${esc(ch.color || '#334155')}"` : ''}>` +
+    (ch ? `${ch.logo ? `<img src="${esc(ch.logo)}" alt="">` : ''}<b>${esc(ch.name)}</b><span>#${ch.seed} seed</span>` : `<b>${proj ? 'TBD' : '—'}</b>`) + '</div></div></div></div>';
+}
+
+// ---- projected bracket (before the official one)
+async function loadProjection(week) {
+  const C = await cfpCore(), p = cfp.proj;
+  if (!p.confs) {
+    const c = LS('cfbconf');
+    if (c && Date.now() - c.t < 86400e3) { p.confs = c.confs; p.leaders = c.leaders; }
+    else {
+      try {
+        const st = await (await fetch(C.ESPN_CFB.replace('/apis/site/v2/', '/apis/v2/') + '/standings?group=80')).json();
+        p.confs = C.confMapFrom(st); p.leaders = C.confLeadersFrom(st);
+        setLS('cfbconf', {t: Date.now(), confs: p.confs, leaders: p.leaders});
+      } catch (e) { p.confs = (c && c.confs) || {}; p.leaders = (c && c.leaders) || {}; }
+    }
+  }
+  if (week && !p.polls[week]) {
+    try {
+      const j = await (await fetch(`${C.ESPN_CFB}/rankings?seasons=${cfp.season}&weeks=${week}&types=2`)).json();
+      p.polls[week] = (j.rankings || []).find(r => r.type === p.type) || 'none';
+    } catch (e) { p.polls[week] = null; }
+  }
+  if (mode === 'cfp' && cfp.tab === 'br') renderCfp();
+}
+const pollWeek = poll => +(((poll && (poll.shortHeadline || poll.headline)) || '').match(/Week (\d+)/) || [])[1] || 0;
+function projectionHtml() {
+  const C = K, p = cfp.proj, cur = pollToShow();
+  if (!cur) return '<div class="cfpinfo">The rankings aren\'t available right now. Try Refresh.</div>';
+  if (!p.type) { p.type = cur.type; p.latest = pollWeek(cur); p.week = p.latest; p.polls[p.latest] = cur; }
+  if (!p.confs) { loadProjection(0); return '<div class="cfpinfo">Building the projected bracket…</div>'; }
+  const poll = p.polls[p.week];
+  if (poll === undefined) { loadProjection(p.week); return projHead(null) + '<div class="cfpinfo">Loading that week\'s rankings…</div>'; }
+  if (!poll || poll === 'none') return projHead(null) + '<div class="cfpinfo">No rankings for that week.</div>';
+  const f = C.projectField(poll.ranks, p.confs, p.leaders), br = C.projectedBracket(f.field);
+  const champs = f.field.filter(t => t.auto);
+  const rows = f.field.map(t => `<li style="--c:${esc(t.color || '#334155')}"><span class="n">${t.seed}</span>${t.logo ? `<img src="${esc(t.logo)}" alt="" loading="lazy">` : '<span></span>'}` +
+    `<span class="tm"><b>${esc(t.name)}</b><span>${t.auto ? `<em class="ab">AUTO BID</em> ${esc(t.conf)} champion` : t.seed <= 4 ? 'First-round bye' : esc(t.conf || 'At-large')}${t.seed <= 4 && t.auto ? ' • bye' : ''}</span></span>` +
+    `<span class="rec">${esc(t.rec)}</span><span class="mv">${t.rank ? '#' + t.rank : 'NR'}</span></li>`).join('');
+  const out = f.out.map(t => `${esc(t.name)} (#${t.rank})`).join(', ');
+  const bumped = f.bumped.length ? `<p class="muted" style="font-size:12px;margin:8px 4px 0"><b>${f.bumped.map(t => esc(t.name)).join(', ')}</b> ${f.bumped.length === 1 ? 'is' : 'are'} in the top 12 but left out for a conference champion.</p>` : '';
+  return projHead(poll) + treeHtml(br, {}, {proj: true}) +
+    `<div class="brnd">Projected field</div><ul class="rk25">${rows}</ul>` + bumped +
+    (out ? `<p class="muted" style="font-size:13px;margin:10px 4px 0"><b>First four out:</b> ${out}</p>` : '') +
+    `<p class="muted" style="font-size:12px;margin:10px 4px 0">If the season ended this week: the five highest-ranked conference champions (each conference's top team stands in for its champion${champs.some(t => !t.rank) ? '; an unranked one comes from the conference standings' : ''}) plus the next seven highest-ranked teams, seeded 1–12 by ranking. The top four get first-round byes. The official bracket comes out on Selection Sunday.</p>`;
+}
+function projHead(poll) {
+  const p = cfp.proj, name = p.type === 'cfp' ? 'CFP Rankings' : 'AP Top 25';
+  return `<div class="cfphead"><h2>Projected bracket</h2><div class="wkpick"><button type="button" class="iconbtn" data-pw="-1"${p.week <= 1 ? ' disabled' : ''} aria-label="Earlier week">‹</button>` +
+    `<div><b>${esc(name)} • Week ${p.week}</b><span>${poll && poll.date ? esc(fmtDay(poll.date)) : ''}${p.week === p.latest ? ' • latest' : ''}</span></div>` +
+    `<button type="button" class="iconbtn" data-pw="1"${p.week >= p.latest ? ' disabled' : ''} aria-label="Later week">›</button></div></div>`;
+}
+
 function pickCfp(slot, id) {
   if (!cfp.draft || cfpLocked()) return;
   const p = {...cfp.draft.p};
-  if (p[slot] === id) delete p[slot]; else p[slot] = id;
+  const wizard = cfp.tab === 'br' && cfp.sub === 'pick';
+  if (p[slot] === id && !wizard) delete p[slot]; else p[slot] = id;   // on the pick screen a tap always picks
   cfp.draft.p = K.tidyPicks(cfp.br, p);                // a changed pick clears later picks it breaks
-  saveCfpSoon(); renderCfp();
+  cfp.skipped.delete(slot);
+  saveCfpSoon();
+  if (wizard) {                                        // on to the next game (or back to the full bracket it came from)
+    cfp.focus = null;
+    if (cfp.back) { cfp.sub = cfp.back; cfp.back = null; }
+    rerenderCfpPick(); if (cfp.sub !== 'pick') renderCfp();
+  } else {
+    const sx = (document.querySelector('#cfpbox .tree') || {}).scrollLeft || 0;     // keep the bracket scrolled where it was
+    renderCfp(); const t = document.querySelector('#cfpbox .tree'); if (t) t.scrollLeft = sx;
+  }
 }
 function saveCfpSoon() {
   clearTimeout(cfp.saveTimer); cfp.saveMsg = 'Saving…';
@@ -2091,7 +2307,8 @@ async function saveCfp() {
   } catch (e) {
     cfp.saveMsg = e.status === 401 || e.status === 403 ? (cfpLocked() ? 'Brackets are locked.' : 'Picks open a few minutes after the bracket is announced. Try again shortly.') : 'Not saved: ' + friendly(e);
   }
-  if (cfp.tab === 'br' && mode === 'cfp') { const m = document.querySelector('#cfpbox .cfphead p:last-child'); if (m) m.textContent = 'Tap a team to move it on. ' + cfp.saveMsg; }
+  const m = document.getElementById('cfpsave');
+  if (m && mode === 'cfp') m.textContent = (cfp.sub === 'full' ? 'Tap a team to pick it, or Stats for the matchup. ' : '') + cfp.saveMsg;
 }
 
 // ---- Leaderboard
@@ -2559,8 +2776,13 @@ $('#c-br').onclick = () => setCfpTab('br');
 $('#c-lb').onclick = () => setCfpTab('lb');
 $('#cfpbox').addEventListener('click', e => {
   const t = e.target.closest('[data-cs]'); if (t && !t.disabled) { pickCfp(t.dataset.cs, t.dataset.ct); return; }
-  const v = e.target.closest('[data-view]'); if (v) { cfp.view = v.dataset.view; cfp.tab = 'br'; renderCfp(); window.scrollTo(0, 0); return; }
-  if (e.target.closest('[data-cfpback]')) { cfp.view = null; cfp.tab = 'lb'; renderCfp(); }
+  const v = e.target.closest('[data-view]'); if (v) { cfp.who = v.dataset.view; cfp.tab = 'br'; cfp.sub = 'full'; renderCfp(); window.scrollTo(0, 0); return; }
+  const sub = e.target.closest('[data-sub]'); if (sub) { cfp.sub = sub.dataset.sub; cfp.focus = null; cfp.back = null; renderCfp(); window.scrollTo(0, 0); return; }
+  const wz = e.target.closest('[data-wz]'); if (wz) { cfp.sub = 'pick'; cfp.focus = wz.dataset.wz; cfp.back = 'full'; renderCfp(); window.scrollTo(0, 0); return; }
+  const sk = e.target.closest('[data-wzskip]'); if (sk) { cfp.skipped.add(sk.dataset.wzskip); cfp.focus = null; rerenderCfpPick(); return; }
+  if (e.target.closest('[data-unskip]')) { cfp.skipped.clear(); renderCfp(); return; }
+  const w = e.target.closest('[data-who]'); if (w) { cfp.who = w.dataset.who === myProfile() ? null : w.dataset.who; renderCfp(); return; }
+  const pw = e.target.closest('[data-pw]'); if (pw && !pw.disabled) { cfp.proj.week += +pw.dataset.pw; renderCfp(); }
 });
 $('#cfpbox').addEventListener('change', e => {
   if (e.target.id !== 'cfptb' || !cfp.draft) return;
