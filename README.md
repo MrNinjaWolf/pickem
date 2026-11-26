@@ -118,6 +118,23 @@ email settings above and publishing the current `database.rules.json`.
 - the sender name, and a note added to every email
 - **Send a reminder now**, to everyone still missing picks
 
+## College Football Playoff page
+
+The **NFL | CFP** switch at the top opens the CFP page (the app always opens on NFL). It uses the
+same logins and player list as the Pick'Em database.
+
+- **Top 25:** the committee's CFP ranking during the season, the AP Top 25 the rest of the year.
+- **Bracket:** once ESPN lists all 12 playoff teams (Selection Sunday), everyone with an email gets
+  an email and a phone notification. Each player picks all 11 games plus a tiebreaker (title-game
+  total points). Brackets lock at the first kickoff (in the database rules too) and stay hidden
+  from other players until then.
+- **Leaderboard:** points, then most points still possible, then the closest tiebreaker.
+- **Admin > College Football Playoff:** turn the page on or off, choose the scoring (classic
+  doubling 1/2/4/8, flat, gentle ramp 1/2/3/5, upset bonus, or seed multiplier), the reminder a
+  day before the lock, and the notification after each round. It also shows who has finished.
+
+The bracket logic is in `phone-app/cfp-core.js`, shared by the app and the email job.
+
 ## Admin tools
 
 - **Databases:** create a new database (you're added to it) and switch between them on your Profile page.

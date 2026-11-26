@@ -60,6 +60,50 @@ img{user-select:none;-webkit-user-drag:none}
 .linkbtn:active{color:#fff}
 .linkbtn.spin .ic{display:inline-block;animation:spin .7s linear infinite}
 main{max-width:760px;margin:0 auto}
+/* ---------- CFP */
+.lsw{display:flex;padding:3px;border-radius:11px;background:var(--surface);border:1px solid var(--line);margin-left:2px}
+.lsw button{border:0;background:none;color:var(--muted);font-weight:800;font-size:13px;letter-spacing:.02em;padding:6px 11px;border-radius:8px;transition:background .25s,color .25s}
+.lsw button.on{color:#fff;background:linear-gradient(135deg,rgba(239,68,68,.95),rgba(185,28,28,.95));box-shadow:0 4px 12px rgba(239,68,68,.3)}
+#cfpbox{padding:6px 12px 60px}
+.cfphead{padding:10px 4px 6px}
+.cfphead h2{margin:0;font-size:19px;letter-spacing:-.01em}
+.cfphead p{margin:3px 0 0;color:var(--muted);font-size:13px}
+.rk25{list-style:none;margin:6px 0 0;padding:0;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);overflow:hidden}
+.rk25 li{display:grid;grid-template-columns:30px 30px 1fr auto 42px;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line)}
+.rk25 li:last-child{border-bottom:0}
+.rk25 .n{font-weight:800;font-size:16px;text-align:center}
+.rk25 img{width:30px;height:30px;object-fit:contain}
+.rk25 .tm b{display:block;font-size:15px}.rk25 .tm span{font-size:12px;color:var(--muted)}
+.rk25 .rec{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.rk25 .mv{font-size:12px;font-weight:800;text-align:right}.rk25 .mv.up{color:var(--green)}.rk25 .mv.dn{color:var(--bad)}.rk25 .mv.nw{color:var(--gold)}
+.brnd{margin:16px 4px 6px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.mu{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);margin-bottom:10px;overflow:hidden}
+.mu .mt{display:flex;justify-content:space-between;gap:8px;padding:7px 12px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--line)}
+.ct{display:grid;grid-template-columns:22px 26px 1fr auto;align-items:center;gap:9px;width:100%;padding:10px 12px;border:0;background:none;color:var(--text);text-align:left;font-weight:700;font-size:15px;transition:background .2s}
+.ct + .ct{border-top:1px solid var(--line)}
+.ct .sd{font-size:12px;color:var(--muted);text-align:center;font-weight:800}
+.ct img{width:26px;height:26px;object-fit:contain}
+.ct .mk{font-size:13px;font-weight:800;color:var(--muted)}
+.ct.sel{background:linear-gradient(90deg,color-mix(in srgb,var(--c) 45%,transparent),transparent)}
+.ct.sel .mk{color:var(--gold)}
+.ct.right .mk{color:var(--green)}.ct.wrong,.ct.dead{opacity:.6}.ct.wrong .nm,.ct.dead .nm{text-decoration:line-through}.ct.wrong .mk,.ct.dead .mk{color:var(--bad)}
+.ct.ph{color:var(--muted);font-weight:600;font-size:13px;cursor:default}
+.ct:disabled{cursor:default}
+.mu .real{padding:6px 12px;font-size:12px;color:var(--muted);border-top:1px dashed var(--line)}
+.mu .real b{color:var(--text)}
+.champ{display:flex;align-items:center;gap:12px;padding:14px;border-radius:var(--radius);border:1px solid var(--line);background:linear-gradient(135deg,rgba(255,197,61,.14),var(--surface))}
+.champ img{width:44px;height:44px;object-fit:contain}
+.champ b{font-size:18px}.champ span{display:block;font-size:12px;color:var(--muted)}
+.tbrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;font-size:14px}
+.tbrow input{width:90px;padding:9px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg2);color:var(--text);font:inherit;text-align:center}
+.cfpbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.cfpbar .stat{font-size:13px}
+.lbt{width:100%}
+.lbt tr.mine td{background:#13213f}
+.lbt tr[data-view]{cursor:pointer}
+.lbt td img{width:20px;height:20px;object-fit:contain;vertical-align:middle;margin-right:5px}
+.cfpinfo{padding:16px;border-radius:var(--radius);border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:14px;margin-top:8px}
+.cfpinfo b{color:var(--text)}
 .view{animation:viewIn .35s var(--ease)}
 .view.from-r{animation:slideFromR .45s var(--glide) both}
 .view.from-l{animation:slideFromL .45s var(--glide) both}
@@ -392,7 +436,8 @@ td.neg{color:var(--bad)}
 <body>
 <header class="top">
   <div class="toprow">
-    <div class="brand"><span class="ball">&#127944;</span><span>Pick<b>'Em</b></span></div>
+    <div class="brand"><span class="ball">&#127944;</span><span id="brandtxt">Pick<b>'Em</b></span>
+      <div class="lsw hide" id="lsw" role="tablist" aria-label="League"><button id="m-nfl" class="on" type="button">NFL</button><button id="m-cfp" type="button">CFP</button></div></div>
     <div class="hr hide" id="hdrright">
       <button id="acctbtn" class="me" type="button" aria-label="Account">
         <span id="syncbtn" class="sync"><span class="sr"></span></span>
@@ -413,6 +458,12 @@ td.neg{color:var(--bad)}
       <button id="t-score" type="button">Scorecard</button>
       <button id="t-stand" type="button">Standings</button>
       <button id="t-admin" class="hide" type="button">Admin</button>
+    </div>
+    <div class="tabs hide" id="cfptabs" role="tablist" style="--n:3">
+      <span class="tabind" id="cfpind"></span>
+      <button id="c-top" class="on" type="button">Top 25</button>
+      <button id="c-br" type="button">Bracket</button>
+      <button id="c-lb" type="button">Leaderboard</button>
     </div>
   </div>
 </header>
@@ -492,6 +543,7 @@ td.neg{color:var(--bad)}
       <div id="trophies"></div>
       <div id="mystats"></div>
     </section>
+    <section id="cfp" class="hide"><div id="cfpbox"></div></section>
     <section id="live" class="view hide">
       <div id="livebox"></div>
     </section>
@@ -589,6 +641,19 @@ td.neg{color:var(--bad)}
           <button class="btn alt full" id="ns-now" type="button">Send a reminder now</button>
           <div class="err" id="ns-nowmsg"></div>
         </div>
+        <div class="wzbox ns" id="csbox">
+          <h3 style="margin:0">College Football Playoff</h3>
+          <p class="muted" style="margin:4px 0 0">The CFP page (the NFL | CFP switch at the top): the Top 25, then a bracket challenge for every player. When the bracket is announced, everyone gets an email and a notification.</p>
+          <label class="sw"><input type="checkbox" id="cs-on"><span>Show the CFP page</span></label>
+          <label class="row2"><span>Scoring</span><select id="cs-scoring"></select></label>
+          <p class="muted" id="cs-about" style="margin:0 0 6px"></p>
+          <label class="sw"><input type="checkbox" id="cs-remind"><span>Reminder a day before brackets lock (email and notification, only to players who haven't finished)</span></label>
+          <label class="sw"><input type="checkbox" id="cs-rounds"><span>Notification after each round with points and place</span></label>
+          <button class="btn full" id="cs-save" type="button">Save CFP settings</button>
+          <div class="err" id="cs-msg"></div>
+          <h4>Brackets</h4>
+          <ul class="alog" id="cs-who"></ul>
+        </div>
         <div class="wzbox">
           <h3 style="margin:0">Activity</h3>
           <p class="muted" style="margin:4px 0 0">Admin changes, password resets and sends from the last 6 months.</p>
@@ -654,6 +719,7 @@ let leagues = LS('leagues') || [];        // databases this user has been given
 let league = LS('league') || '';
 let profiles = [], picks = {}, profile = null;   // picks: "profile|weekKey|gameId" -> team abbreviation
 let screen = 'login', loadedOnce = false;
+let mode = 'nfl';                        // 'nfl' or 'cfp' (the College Football Playoff page); the app always opens on NFL
 let season = now.getMonth() < 2 ? now.getFullYear() - 1 : now.getFullYear();
 let period = null;
 usePeriods(LS('cal.' + season) || periodsFrom(null, season));
@@ -675,7 +741,7 @@ function toast(msg) {
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
   clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('show'), 2600);
 }
-const setStatus = s => { $('#status').textContent = s; };
+const setStatus = (s, from) => { if (mode === 'cfp' && from !== 'cfp') return; $('#status').textContent = s; };
 const timeStr = () => new Date().toLocaleTimeString([], {hour: 'numeric', minute: '2-digit', second: '2-digit'});
 
 // ---------------------------------------------------------------- login (Firebase Authentication over HTTPS)
@@ -831,6 +897,7 @@ function showScreen(s) {
   ['login', 'noaccess', 'needemail', 'resetpw', 'app'].forEach(n => $('#' + n).classList.toggle('hide', n !== s));
   $('#hdrright').classList.toggle('hide', s === 'login' || s === 'resetpw');
   $('#appnav').classList.toggle('hide', s !== 'app');
+  updateModeSwitch();
 }
 /** The database URL and API key come from config.js, else from the site's Netlify settings (/api/config),
  *  else from the last copy saved on this device. */
@@ -922,6 +989,7 @@ async function enterLeague(id) {
   updateHeader(); chip();
   games = LS('games.' + wk()) || [];
   render();
+  loadCfpSettings();
   if (!loadedOnce) { loadedOnce = true; loadLive(); await loadGames(true); } else await loadGames(false);
   await pull();
 }
@@ -1833,13 +1901,245 @@ function showTab(t) {
   $('#weeknav').classList.toggle('collapsed', t === 'live' || t === 'admin' || t === 'prof');
   moveTabIndicator();
   if (t === 'stand') loadSeason(false);
-  if (t === 'admin') { renderAdmin(); checkRules(false); loadEmails(); loadMailLog(); loadNotifySettings(); loadActivity(); if (Date.now() - live.at > 60000) loadLive(); }
+  if (t === 'admin') { renderAdmin(); loadCfpAdmin(); checkRules(false); loadEmails(); loadMailLog(); loadNotifySettings(); loadActivity(); if (Date.now() - live.at > 60000) loadLive(); }
   if (t === 'live') { renderLive(); if (Date.now() - live.at > 15000) loadLive(); if (liveGame) loadGameSummary(liveGame); }
 }
 function moveTabIndicator() {
   const vis = TABS.filter(n => $('#t-' + n) && !$('#t-' + n).classList.contains('hide')), i = vis.findIndex(n => $('#t-' + n).classList.contains('on'));
   $('#tabind').style.opacity = i < 0 ? '0' : '1';           // the Profile page has no tab
   $('#tabind').style.transform = `translateX(${Math.max(0, i) * 100}%)`;
+}
+
+// ---------------------------------------------------------------- College Football Playoff page
+// Top 25 (the committee's CFP ranking during the season, the AP poll otherwise), then a bracket challenge
+// once the playoff field is set. The bracket logic lives in cfp-core.js (shared with the email job).
+const CFP_DEFAULTS = {on: true, scoring: 'A', remind: true, rounds: true};
+const cfp = {tab: 'top', chosen: false, season: 0, polls: null, br: null, mine: null, all: null, draft: null, view: null,
+  s: {...CFP_DEFAULTS}, at: 0, busy: false, saveMsg: '', saveTimer: null};
+let K = null;                                        // cfp-core.js, loaded the first time the CFP page opens
+const cfpCore = async () => K || (K = await import('./cfp-core.js'));
+const cfpLocked = () => !!(cfp.br && cfp.br.lock && Date.now() >= cfp.br.lock);
+const fmtWhen = t => new Date(t).toLocaleString([], {weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'});
+const fmtDay = t => new Date(t).toLocaleDateString([], {weekday: 'short', month: 'short', day: 'numeric'});
+
+async function loadCfpSettings() {
+  try { cfp.s = {...CFP_DEFAULTS, ...((await dbCall('GET', cfg.url + '/settings/cfp')) || {})}; } catch (e) { /* offline or old rules: keep defaults */ }
+  updateModeSwitch();
+  if (wantCfp && screen === 'app' && (cfp.s.on || isAdmin())) { wantCfp = false; setMode('cfp'); }
+}
+/** The NFL | CFP switch replaces the "Pick'Em" title once you're in (the administrator sees it even when the page is off). */
+function updateModeSwitch() {
+  const on = screen === 'app' && (cfp.s.on || isAdmin());
+  $('#lsw').classList.toggle('hide', !on); $('#brandtxt').classList.toggle('hide', on);
+  if (!on && mode === 'cfp') setMode('nfl');
+}
+function setMode(m) {
+  if (m === mode) return;
+  mode = m;
+  $('#m-nfl').classList.toggle('on', m === 'nfl'); $('#m-cfp').classList.toggle('on', m === 'cfp');
+  $('#weeknav').classList.toggle('hide', m === 'cfp'); $('#tabs').classList.toggle('hide', m === 'cfp'); $('#cfptabs').classList.toggle('hide', m !== 'cfp');
+  if (m === 'cfp') {
+    for (const n of TABS) $('#' + n).classList.add('hide');
+    const sec = $('#cfp'); sec.classList.remove('hide', 'view'); void sec.offsetWidth; sec.classList.add('view');
+    setStatus(cfp.at ? 'Updated ' + new Date(cfp.at).toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'}) : 'Loading…', 'cfp');
+    renderCfp(); loadCfp(false);
+  } else {
+    $('#cfp').classList.add('hide');
+    showTab(lastTab || 'picks');
+    setStatus('Updated ' + timeStr());
+  }
+  window.scrollTo(0, 0);
+}
+function setCfpTab(t) { cfp.tab = t; cfp.chosen = true; cfp.view = null; renderCfp(); window.scrollTo(0, 0); }
+
+async function loadCfp(force) {
+  if (cfp.busy || (!force && Date.now() - cfp.at < 60000)) return;
+  cfp.busy = true;
+  try {
+    const C = await cfpCore();
+    cfp.season = C.cfpSeason();
+    const get = u => fetch(u).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+    const [rk, post] = await Promise.all([get(C.ESPN_CFB + '/rankings').catch(() => null),
+      get(`${C.ESPN_CFB}/scoreboard?dates=${cfp.season}&seasontype=3&limit=200&groups=80`).catch(() => null)]);
+    if (rk) cfp.polls = rk.rankings || [];
+    if (post) cfp.br = C.bracketFrom(post.events);
+    if (!rk && !post) throw new Error('offline');
+    await loadBrackets();
+    if (!cfp.chosen && cfp.br && cfp.br.set) cfp.tab = 'br';      // once the bracket is out, open on it
+    cfp.at = Date.now();
+    setStatus('Updated ' + timeStr(), 'cfp');
+  } catch (e) { setStatus('Offline – try Refresh', 'cfp'); }
+  cfp.busy = false;
+  renderCfp();
+}
+const bracketUrl = name => `${cfg.url}/cfp/${cfp.season}/brackets/${encodeURIComponent(league)}` + (name ? '/' + encodeURIComponent(name) : '');
+async function loadBrackets() {
+  const me = myProfile();
+  if (me && !cfp.saveTimer) {
+    try { cfp.mine = await dbCall('GET', bracketUrl(me)); } catch (e) { /* keep what we have */ }
+    cfp.draft = {p: {...((cfp.mine || {}).p || {})}, tb: (cfp.mine || {}).tb};
+  }
+  cfp.all = null;
+  if (cfpLocked()) { try { cfp.all = (await dbCall('GET', bracketUrl())) || {}; } catch (e) { cfp.all = null; } }
+}
+
+function renderCfp() {
+  if (mode !== 'cfp') return;
+  ['top', 'br', 'lb'].forEach((t, i) => { $('#c-' + t).classList.toggle('on', cfp.tab === t); if (cfp.tab === t) $('#cfpind').style.transform = `translateX(${i * 100}%)`; });
+  const box = $('#cfpbox');
+  if (!K) { box.innerHTML = '<div class="cfpinfo">Loading…</div>'; return; }
+  box.innerHTML = cfp.tab === 'top' ? cfpTopHtml() : cfp.tab === 'br' ? cfpBracketHtml() : cfpBoardHtml();
+}
+
+// ---- Top 25
+function pollToShow() {
+  const ps = cfp.polls || [], c = ps.find(p => p.type === 'cfp'), ap = ps.find(p => p.type === 'ap');
+  if (c && Date.now() - Date.parse(c.date) < 60 * 86400e3) return c;       // the committee ranking, in season
+  return ap || c || null;                                                 // otherwise the AP poll
+}
+function cfpTopHtml() {
+  const p = pollToShow();
+  if (!p) return '<div class="cfpinfo">The rankings aren\'t available right now. Try Refresh.</div>';
+  const name = p.type === 'cfp' ? 'College Football Playoff Rankings' : 'AP Top 25';
+  const week = (p.shortHeadline || p.headline || '').replace(/^.*?-\s*/, '').replace(/^.*?(Week \d+|Final.*)$/, '$1');
+  const rows = (p.ranks || []).slice(0, 25).map(r => {
+    const t = r.team || {}, logo = ((t.logos || [])[0] || {}).href || t.logo || '';
+    const prev = r.previous || 0, mv = prev ? prev - r.current : null;
+    const tr = mv === null ? '<span class="mv nw">NEW</span>' : mv > 0 ? `<span class="mv up">▲${mv}</span>` : mv < 0 ? `<span class="mv dn">▼${-mv}</span>` : '<span class="mv">–</span>';
+    return `<li><span class="n">${r.current}</span>${logo ? `<img src="${esc(logo)}" alt="" loading="lazy">` : '<span></span>'}` +
+      `<span class="tm"><b>${esc(t.location || t.name || '')}</b><span>${esc(t.nickname || t.name || '')}</span></span><span class="rec">${esc(r.recordSummary || '')}</span>${tr}</li>`;
+  }).join('');
+  const set = cfp.br && cfp.br.set;
+  return `<div class="cfphead"><h2>${name}</h2><p>${esc(week || '')}${p.date ? ' • ' + esc(fmtDay(p.date)) : ''}</p></div>` +
+    (set ? `<div class="cfpinfo" style="margin-bottom:10px">The playoff bracket is set. <b>Pick yours on the Bracket tab</b>${cfpLocked() ? '' : ' before ' + esc(fmtWhen(cfp.br.lock))}.</div>` : '') +
+    `<ul class="rk25">${rows}</ul>`;
+}
+
+// ---- Bracket
+const SRC = {r1: '#8 / #9', r2: '#5 / #12', r3: '#6 / #11', r4: '#7 / #10'};
+function placeholder(src) {
+  if (typeof src === 'number') return 'Seed #' + src;
+  if (src[0] === 'r') return 'Winner of ' + SRC[src];
+  return 'Pick the ' + (src[0] === 'q' ? 'quarterfinal' : 'semifinal') + ' first';
+}
+function cfpBracketHtml() {
+  const br = cfp.br, C = K, me = myProfile();
+  if (!br || !br.set) {
+    return '<div class="cfphead"><h2>Bracket challenge</h2></div><div class="cfpinfo">The 12-team playoff bracket is announced on <b>Selection Sunday</b>. ' +
+      'When it\'s out, everyone gets an email and a notification, and you can pick every game here' + (br && br.lock ? ` until the first kickoff, <b>${esc(fmtWhen(br.lock))}</b>` : ' until the first kickoff') +
+      '.<br><br>Until then, keep an eye on the <b>Top 25</b>.</div>';
+  }
+  const locked = cfpLocked(), viewing = cfp.view;
+  if (!me && !viewing) return '<div class="cfpinfo">Your name isn\'t on this database\'s player list, so you can\'t make a bracket. Ask the administrator to add it.</div>';
+  const b = viewing ? ((cfp.all || {})[viewing] || {}) : (cfp.draft || {p: {}});
+  const picks = b.p || {}, editable = !viewing && !locked;
+  const sides = C.pickedSides(br, picks), sc = C.scoreBracket(br, picks, cfp.s.scoring);
+  const n = C.ORDER.filter(k => picks[k]).length;
+  let head = `<div class="cfphead"><h2>${viewing ? esc(viewing) + '’s bracket' : 'Your bracket'}</h2>`;
+  if (viewing) head += `<p><button class="linkbtn" data-cfpback type="button">‹ Back to the leaderboard</button></p>`;
+  head += '<div class="cfpbar">' + (locked
+    ? `<span class="stat">${sc.pts} <i>points</i></span><span class="stat">${sc.max} <i>max possible</i></span><span class="stat" style="color:var(--green)">${sc.right} <i>right</i></span><span class="stat" style="color:var(--bad)">${sc.wrong} <i>wrong</i></span>`
+    : `<span class="stat">${n}/11 <i>picked</i></span><span class="stat"><i>locks</i> ${esc(fmtWhen(br.lock))}</span>`) + '</div>';
+  head += `<p>${editable ? 'Tap a team to move it on. ' + esc(cfp.saveMsg || 'Your picks save as you go.') : locked ? 'Brackets are locked.' : ''}</p></div>`;
+  let html = head;
+  for (let r = 0; r < 4; r++) {
+    html += `<div class="brnd">${C.ROUND_NAMES[r]}</div>`;
+    for (const k of C.ORDER.filter(x => C.roundOf(x) === r)) {
+      const real = br.slot[k], g = real.game, [x, y] = C.SLOTS[k];
+      const meta = g ? `<span>${esc(g.bowl || C.ROUND_NAMES[r])}</span><span>${esc(g.state === 'pre' ? fmtWhen(g.date) : g.detail)}</span>` : `<span>${C.ROUND_NAMES[r]}</span><span></span>`;
+      const team = (id, src) => {
+        if (!id) return `<button class="ct ph" type="button" disabled><span></span><span></span><span>${esc(placeholder(src))}</span><span></span></button>`;
+        const t = br.teams[id] || {}, picked = picks[k] === id, res = picked ? sc.by[k] : '';
+        const cls = 'ct' + (picked ? ' sel' : '') + (res === 'right' || res === 'wrong' || res === 'dead' ? ' ' + res : '');
+        const mark = picked ? (res === 'right' ? '✓' : res === 'wrong' || res === 'dead' ? '✗' : 'PICK') : '';
+        return `<button class="${cls}" type="button" data-cs="${k}" data-ct="${esc(id)}" style="--c:${esc(t.color || '#334155')}"${editable ? '' : ' disabled'}>` +
+          `<span class="sd">${t.seed || ''}</span>${t.logo ? `<img src="${esc(t.logo)}" alt="" loading="lazy">` : '<span></span>'}<span class="nm">${esc(t.name || t.abbr || '')}</span><span class="mk">${mark}</span></button>`;
+      };
+      let realLine = '';
+      if (g && g.teams.length === 2 && (g.state !== 'pre' || locked)) {
+        const [p0, p1] = g.teams;
+        realLine = `<div class="real">${g.state === 'pre' ? 'Matchup' : g.state === 'in' ? 'Live' : 'Final'}: <b>${esc(p0.abbr)} ${g.state === 'pre' ? '' : p0.score}</b> – <b>${g.state === 'pre' ? '' : p1.score} ${esc(p1.abbr)}</b>${g.state === 'in' ? ' • ' + esc(g.detail) : ''}</div>`;
+      }
+      html += `<div class="mu"><div class="mt">${meta}</div>${team(sides[k][0], x)}${team(sides[k][1], y)}${realLine}</div>`;
+    }
+  }
+  const ch = picks.f && br.teams[picks.f];
+  html += `<div class="brnd">Champion</div><div class="champ">${ch ? `${ch.logo ? `<img src="${esc(ch.logo)}" alt="">` : ''}<div><b>${esc(ch.name)}</b><span>#${ch.seed} seed</span></div>` : '<div><b>No champion picked yet</b><span>Pick the national championship game above.</span></div>'}</div>`;
+  html += `<div class="tbrow"><span>Tiebreaker: total points in the title game</span>` +
+    (editable ? `<input id="cfptb" type="number" inputmode="numeric" min="0" max="250" placeholder="e.g. 52" value="${typeof b.tb === 'number' ? b.tb : ''}">` : `<b>${typeof b.tb === 'number' ? b.tb : '—'}</b>`) + '</div>';
+  return html;
+}
+function pickCfp(slot, id) {
+  if (!cfp.draft || cfpLocked()) return;
+  const p = {...cfp.draft.p};
+  if (p[slot] === id) delete p[slot]; else p[slot] = id;
+  cfp.draft.p = K.tidyPicks(cfp.br, p);                // a changed pick clears later picks it breaks
+  saveCfpSoon(); renderCfp();
+}
+function saveCfpSoon() {
+  clearTimeout(cfp.saveTimer); cfp.saveMsg = 'Saving…';
+  cfp.saveTimer = setTimeout(saveCfp, 500);
+}
+async function saveCfp() {
+  const me = myProfile(), d = cfp.draft;
+  cfp.saveTimer = null;
+  if (!me || !d) return;
+  try {
+    if (!Object.keys(d.p).length) await dbCall('DELETE', bracketUrl(me));
+    else await dbCall('PUT', bracketUrl(me), {p: d.p, t: Date.now(), ...(typeof d.tb === 'number' ? {tb: d.tb} : {})});
+    cfp.mine = {...d}; cfp.saveMsg = 'Saved.';
+  } catch (e) {
+    cfp.saveMsg = e.status === 401 || e.status === 403 ? (cfpLocked() ? 'Brackets are locked.' : 'Picks open a few minutes after the bracket is announced. Try again shortly.') : 'Not saved: ' + friendly(e);
+  }
+  if (cfp.tab === 'br' && mode === 'cfp') { const m = document.querySelector('#cfpbox .cfphead p:last-child'); if (m) m.textContent = 'Tap a team to move it on. ' + cfp.saveMsg; }
+}
+
+// ---- Leaderboard
+function cfpBoardHtml() {
+  const br = cfp.br, sch = K.SCORING[cfp.s.scoring] || K.SCORING.A;
+  const foot = `<p class="muted" style="font-size:12px;margin:10px 4px">Scoring: <b>${esc(sch.name)}</b> (${esc(sch.about)}). Ties: most points still possible, then the closest title-game total.</p>`;
+  if (!br || !br.set) return '<div class="cfphead"><h2>Leaderboard</h2></div><div class="cfpinfo">The leaderboard starts once the playoff bracket is set.</div>' + foot;
+  if (!cfpLocked()) {
+    const n = K.ORDER.filter(k => ((cfp.draft || {}).p || {})[k]).length;
+    return `<div class="cfphead"><h2>Leaderboard</h2></div><div class="cfpinfo">Everyone's brackets stay hidden until they lock at the first kickoff, <b>${esc(fmtWhen(br.lock))}</b>. You've picked <b>${n} of 11</b> games.</div>` + foot;
+  }
+  if (!cfp.all) return '<div class="cfphead"><h2>Leaderboard</h2></div><div class="cfpinfo">Loading brackets…</div>';
+  const rows = K.leaderboard(br, cfp.all, cfp.s.scoring), me = myProfile(), fin = br.finalTotal !== null;
+  if (!rows.length) return '<div class="cfphead"><h2>Leaderboard</h2></div><div class="cfpinfo">Nobody made a bracket this year.</div>' + foot;
+  const body = rows.map(r => {
+    const ch = r.champ && br.teams[r.champ];
+    return `<tr data-view="${esc(r.name)}"${r.name === me ? ' class="mine"' : ''}><td><span class="rk${r.rank <= 3 ? ' r' + r.rank : ''}">${r.rank}</span>${esc(r.name)}</td><td><b>${r.pts}</b></td><td>${r.max}</td>` +
+      `<td style="text-align:left">${ch ? `${ch.logo ? `<img src="${esc(ch.logo)}" alt="">` : ''}${esc(ch.abbr)}${br.slot.f.winner ? (br.slot.f.winner === r.champ ? ' ✓' : ' ✗') : ''}` : '—'}</td>` +
+      (fin ? `<td>${r.tb ?? '—'}</td>` : '') + '</tr>';
+  }).join('');
+  return `<div class="cfphead"><h2>Leaderboard</h2><p>${fin ? 'Final' : 'Tap a player to see their bracket.'}</p></div>` +
+    `<div class="tw" style="margin:6px 0 0"><table class="lbt"><tr><th>Player</th><th>Pts</th><th>Max</th><th>Champion</th>${fin ? `<th>TB (${br.finalTotal})</th>` : ''}</tr>${body}</table></div>` + foot;
+}
+
+// ---- Admin: CFP settings and who has a bracket
+async function loadCfpAdmin() {
+  if (!isAdmin()) return;
+  const C = await cfpCore();
+  try { cfp.s = {...CFP_DEFAULTS, ...((await dbCall('GET', cfg.url + '/settings/cfp')) || {})}; } catch (e) { /* defaults */ }
+  $('#cs-on').checked = !!cfp.s.on; $('#cs-remind').checked = !!cfp.s.remind; $('#cs-rounds').checked = !!cfp.s.rounds;
+  $('#cs-scoring').innerHTML = Object.entries(C.SCORING).map(([k, v]) => `<option value="${k}"${k === cfp.s.scoring ? ' selected' : ''}>${esc(v.name)}</option>`).join('');
+  $('#cs-about').textContent = (C.SCORING[cfp.s.scoring] || C.SCORING.A).about;
+  const season = C.cfpSeason(), who = $('#cs-who');
+  try {
+    const all = (await dbCall('GET', `${cfg.url}/cfp/${season}/brackets/${encodeURIComponent(league)}`)) || {};
+    who.innerHTML = profiles.length ? profiles.map(p => {      // progress only: nobody's picks are shown before the lock
+      const n = C.ORDER.filter(k => ((all[p] || {}).p || {})[k]).length;
+      return `<li><small>${n === 11 ? '✅' : n ? '✏️' : '⭕'}</small><span>${esc(p)}: ${n === 11 ? 'bracket done' : n ? n + ' of 11 picked' : 'not started'}</span></li>`;
+    }).join('') : '<li class="muted">Add players first.</li>';
+  } catch (e) { who.innerHTML = '<li class="muted">Install the latest database rules (above) to see brackets.</li>'; }
+}
+async function saveCfpSettings() {
+  const m = $('#cs-msg'); m.classList.remove('ok');
+  const next = {on: $('#cs-on').checked, scoring: $('#cs-scoring').value, remind: $('#cs-remind').checked, rounds: $('#cs-rounds').checked};
+  $('#cs-save').disabled = true; m.textContent = 'Saving…';
+  try { await dbCall('PUT', cfg.url + '/settings/cfp', next); cfp.s = next; m.classList.add('ok'); m.textContent = 'Saved.'; adminLog('Changed the CFP settings'); updateModeSwitch(); }
+  catch (e) { m.textContent = friendly(e); }
+  $('#cs-save').disabled = false;
 }
 
 // ---------------------------------------------------------------- live scores
@@ -2054,6 +2354,8 @@ async function requestReset() {
   $('#fgbtn').disabled = false;
 }
 const resetToken = new URLSearchParams(location.search).get('reset');
+let wantCfp = new URLSearchParams(location.search).has('cfp');   // opened from the CFP email: show the CFP page once logged in
+if (wantCfp) history.replaceState(null, '', location.pathname);
 async function finishReset() {
   const m = $('#rpmsg'), p = $('#rpnew').value;
   if (p.length < 6) { m.textContent = 'The new password needs at least 6 characters.'; return; }
@@ -2246,9 +2548,34 @@ $('#fguser').addEventListener('keydown', e => { if (e.key === 'Enter') requestRe
 $('#rpbtn').onclick = finishReset;
 $('#refresh').onclick = () => {
   const r = $('#refresh'); r.classList.add('spin');
+  if (mode === 'cfp') { loadCfp(true).finally(() => setTimeout(() => r.classList.remove('spin'), 300)); return; }
   Promise.all([loadGames(false), pull()]).finally(() => setTimeout(() => r.classList.remove('spin'), 300));
   if (!$('#stand').classList.contains('hide')) loadSeason(true);
 };
+$('#m-nfl').onclick = () => setMode('nfl');
+$('#m-cfp').onclick = () => setMode('cfp');
+$('#c-top').onclick = () => setCfpTab('top');
+$('#c-br').onclick = () => setCfpTab('br');
+$('#c-lb').onclick = () => setCfpTab('lb');
+$('#cfpbox').addEventListener('click', e => {
+  const t = e.target.closest('[data-cs]'); if (t && !t.disabled) { pickCfp(t.dataset.cs, t.dataset.ct); return; }
+  const v = e.target.closest('[data-view]'); if (v) { cfp.view = v.dataset.view; cfp.tab = 'br'; renderCfp(); window.scrollTo(0, 0); return; }
+  if (e.target.closest('[data-cfpback]')) { cfp.view = null; cfp.tab = 'lb'; renderCfp(); }
+});
+$('#cfpbox').addEventListener('change', e => {
+  if (e.target.id !== 'cfptb' || !cfp.draft) return;
+  const v = parseInt(e.target.value, 10);
+  if (isNaN(v)) delete cfp.draft.tb; else cfp.draft.tb = Math.max(0, Math.min(250, v));
+  if (Object.keys(cfp.draft.p).length) saveCfpSoon();
+  else cfp.saveMsg = 'Pick a game first, then the tiebreaker saves too.';
+});
+$('#cs-save').onclick = saveCfpSettings;
+$('#cs-scoring').addEventListener('change', () => { if (K) $('#cs-about').textContent = (K.SCORING[$('#cs-scoring').value] || K.SCORING.A).about; });
+setInterval(() => {                                   // CFP page: live bracket games every minute, otherwise every 10
+  if (document.hidden || !active() || mode !== 'cfp') return;
+  const busyDay = cfp.br && cfp.br.games.some(g => g.state === 'in' || (g.state === 'pre' && Math.abs(Date.parse(g.date) - Date.now()) < 3 * 3600e3));
+  if (busyDay || Date.now() - cfp.at > 600000) loadCfp(true);
+}, 60000);
 $('#t-picks').onclick = () => { resetWizard(); animateList = true; renderPicks(); showTab('picks'); };
 $('#t-score').onclick = () => showTab('score');
 $('#t-stand').onclick = () => showTab('stand');
@@ -2260,7 +2587,8 @@ $('#sttitle').addEventListener('change', e => {
 });
 $('#lgbtn').onclick = doLogin;
 $('#lgpass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-$('#acctbtn').onclick = () => { if (!$('#prof').classList.contains('hide')) showTab(lastTab); else openProfile(); };
+$('#acctbtn').onclick = () => {
+  if (mode === 'cfp') { setMode('nfl'); openProfile(); return; } if (!$('#prof').classList.contains('hide')) showTab(lastTab); else openProfile(); };
 $('#t-live').onclick = () => { liveGame = null; showTab('live'); };
 $('#livebox').addEventListener('toggle', e => {          // remember which drives are expanded
   const dr = e.target.closest && e.target.closest('[data-drive]'); if (!dr) return;

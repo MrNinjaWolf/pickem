@@ -9,6 +9,7 @@
 //   GMAIL_APP_PASSWORD      a Gmail app password for that address
 import nodemailer from 'nodemailer';
 import {vapidKeys, pushTo} from './push.mjs';
+import {bracketFrom, leaderboard, cfpSeason, ORDER, ROUND_NAMES, SCORING} from '../../../phone-app/cfp-core.js';
 
 const E = k => (process.env[k] || '').trim();
 export const DOMAIN = '@pickem.app', ADMIN = 'dakota', MAILER = 'mailer';
@@ -17,6 +18,7 @@ export const missingSettings = () => REQUIRED.filter(k => !E(k));
 
 // Overrides used only by tests: ESPN_BASE, PICKEM_AUTH_BASE, PICKEM_DB_NS, SMTP_HOST, SMTP_PORT, PICKEM_NOW
 const ESPN = () => E('ESPN_BASE') || 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
+const CFB = () => E('ESPN_CFB_BASE') || 'https://site.api.espn.com/apis/site/v2/sports/football/college-football';
 const AUTH = () => E('PICKEM_AUTH_BASE') || 'https://identitytoolkit.googleapis.com';
 const now = () => E('PICKEM_NOW') ? Date.parse(E('PICKEM_NOW')) : Date.now();
 export const appUrl = () => E('APP_URL') || E('URL') || 'https://dak-nfl.netlify.app';
@@ -398,6 +400,8 @@ export async function runOnce({transport = mailer(), log = console.log} = {}) {
       }
     }
   }
+  try { count += await runCfp({q, d, people, phones, keys: canPush ? keys : null, opts, transport, log, t, was, mark}); }
+  catch (e) { log('CFP bracket step failed: ' + e.message); }
   return count;
 }
 
@@ -431,3 +435,74 @@ export async function remindNow({transport = mailer(), log = console.log} = {}) 
 export async function logEvent(q, who, what) {
   try { await q('POST', '/log', {t: Date.now(), who: String(who).slice(0, 40), what: String(what).slice(0, 300)}); } catch (e) { /* the log is best effort */ }
 }
+
+// ---------------------------------------------------------------- CFP bracket
+export const CFP_DEFAULTS = {on: true, scoring: 'A', remind: true, rounds: true};
+export const readCfpSettings = v => ({...CFP_DEFAULTS, ...(v && typeof v === 'object' ? v : {})});
+const fullBracket = b => !!b && ORDER.every(k => (b.p || {})[k]);
+
+/** The bracket announcement, the reminder a day before the lock, and a notification after each round. */
+async function runCfp({q, d, people, phones, keys, opts, transport, log, t, was, mark}) {
+  const cs = readCfpSettings(await q('GET', '/settings/cfp').catch(() => null));
+  if (!cs.on) return 0;
+  const season = cfpSeason(t), key = `cfp-${season}`;
+  const r = await fetch(`${CFB()}/scoreboard?dates=${season}&seasontype=3&limit=200&groups=80`);
+  if (!r.ok) throw new Error('ESPN HTTP ' + r.status);
+  const br = bracketFrom((await r.json()).events);
+  if (!br.set || !br.lock) return 0;
+  if ((await q('GET', `/cfp/${season}/lock`).catch(() => null)) !== br.lock) {
+    await q('PUT', `/cfp/${season}/lock`, br.lock); log(`CFP bracket lock saved: ${et(br.lock)}`);
+  }
+  const url = appUrl() + '/?cfp=1';
+  let count = 0;
+  const email = async (kind, who, subject, title, lines) => {
+    if (was(key, kind, who.user)) return;
+    try { await send(transport, who.email, subject, title, lines, opts); await mark(key, kind, who.user); count++; log(`sent CFP ${kind} to ${who.user}`); }
+    catch (e) { log(`could not send CFP ${kind} to ${who.user}: ${e.message}`); }
+  };
+  const push = async (kind, ph, msg) => {
+    if (!keys || was(key, kind, ph.user)) return;
+    const n = await pushTo(q, keys, ph.user, ph.subs, {...msg, url}, log);
+    if (n) { await mark(key, kind, ph.user); count += n; }
+  };
+  const button = `<a href="${url}" style="color:#ffc53d">Fill out your bracket</a>`;
+
+  // ---- the bracket is set
+  if (t < br.lock) {
+    const top = [1, 2, 3, 4].map(n => br.seeds[n]).filter(Boolean).map(x => `${esc(x.name)}`).join(', ');
+    for (const who of people) await email('announce', who, 'The CFP bracket is set: make your picks', 'Pick your CFP bracket',
+      [`The College Football Playoff bracket is out. The top four seeds: <b>${top}</b>.`,
+       `Pick every game through the national championship on the <b>CFP</b> page of Pick'Em. Brackets lock at the first kickoff, <b>${esc(et(br.lock))}</b>.`, button]);
+    for (const ph of phones) await push('pushannounce', ph, {title: '🏈 The CFP bracket is set', body: `Pick your bracket before ${et(br.lock)}.`});
+  }
+
+  const brackets = (await q('GET', `/cfp/${season}/brackets`).catch(() => null)) || {};
+  const bracketOf = (lg, name) => ((brackets[lg] || {})[name]) || null;
+
+  // ---- a day before the lock, to anyone who hasn't finished
+  if (cs.remind && t >= br.lock - 24 * 3600e3 && t < br.lock) {
+    const missing = who => who.leagues.some(({lg, name}) => !fullBracket(bracketOf(lg, name)));
+    for (const who of people) if (missing(who)) await email('remind', who, 'Your CFP bracket locks tomorrow', 'Finish your CFP bracket',
+      [`Your College Football Playoff bracket isn't finished. Picks lock at the first kickoff, <b>${esc(et(br.lock))}</b>.`, button]);
+    for (const ph of phones) if (missing(ph)) await push('pushremind', ph, {title: '⏰ Your CFP bracket locks soon', body: `Finish it before ${et(br.lock)}.`});
+  }
+
+  // ---- after each round: your points and place
+  if (cs.rounds) for (let rd = 0; rd < 4; rd++) {
+    if (!br.roundsDone[rd]) continue;
+    const ends = br.games.filter(g => g.round === rd).map(g => Date.parse(g.date));
+    if (!ends.length || t - Math.max(...ends) > 3 * 86400e3) continue;
+    for (const ph of phones) {
+      const {lg, name} = ph.leagues.find(x => bracketOf(x.lg, x.name)) || {};
+      if (!lg) continue;
+      const board = leaderboard(br, brackets[lg], cs.scoring), me = board.find(x => x.name === name);
+      if (!me) continue;
+      const place = `${ordinal(me.rank)} of ${board.length}`;
+      await push('pushround' + rd, ph, rd === 3
+        ? {title: me.rank === 1 ? '🏆 You won the CFP bracket!' : `🏈 CFP bracket final: ${place}`, body: `${me.pts} points. Winner: ${board.filter(x => x.rank === 1).map(x => x.name).join(', ')}.`}
+        : {title: `🏈 CFP ${ROUND_NAMES[rd]} done`, body: `You have ${me.pts} points (${place}). ${me.max - me.pts} more still possible.`});
+    }
+  }
+  return count;
+}
+export {SCORING as CFP_SCORING};
