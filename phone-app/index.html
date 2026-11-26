@@ -80,6 +80,11 @@ select option{color:#000}
 
 /* ---------- picks list */
 #summary{padding:14px 16px 4px;font-size:14px;color:var(--muted)}
+.pnote{margin:12px 16px 0;padding:10px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--line);font-size:13px;color:var(--muted)}
+.pnote b{color:var(--gold)}
+.wzbox .tw{margin:0;box-shadow:none}
+.pretable th,.pretable td{padding:9px 7px}.pretable th{letter-spacing:.04em}
+#preseason .wzbox{padding:12px 10px}
 #summary b{color:var(--text);font-size:17px}
 #summary .stats{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 2px}
 #summary .stat{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:12px;font-weight:700;color:var(--text)}
@@ -470,6 +475,7 @@ td.neg{color:var(--bad)}
   <div class="statusrow"><span id="status">Loading&hellip;</span><button class="linkbtn" id="refresh" type="button"><span class="ic">&#8635;</span> Refresh</button></div>
   <main>
     <section id="picks" class="view">
+      <div id="pnote" class="pnote hide"></div>
       <div id="summary"></div>
       <div id="games"></div>
     </section>
@@ -482,6 +488,7 @@ td.neg{color:var(--bad)}
       <div id="sttitle"></div>
       <div id="stnote"></div>
       <div class="tw"><table id="sttable"></table></div>
+      <div id="preseason"></div>
       <div id="trophies"></div>
       <div id="mystats"></div>
     </section>
@@ -600,9 +607,34 @@ const $ = s => document.querySelector(s);
 const ESPN = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard';
 const DOMAIN = '@pickem.app';
 const ADMIN = 'dakota';                   // this login can manage the list and create logins (also set in database.rules.json)
-const PERIODS = Array.from({length: 18}, (_, i) => ({label: 'Week ' + (i + 1), type: 2, week: i + 1})).concat([
-  {label: 'Wild Card', type: 3, week: 1}, {label: 'Divisional', type: 3, week: 2},
-  {label: 'Conference Championship', type: 3, week: 3}, {label: 'Super Bowl', type: 3, week: 5}]);
+// The weeks of a season, in order, from ESPN's own calendar (the 2026 season dropped the Pro Bowl week,
+// so the Super Bowl moved from playoff week 5 to week 4). The Pro Bowl is never picked. Preseason weeks
+// (pre: true) can be picked, but count only toward the preseason rankings.
+const PLAYOFF_NAMES = {'Divisional Round': 'Divisional', 'Conference Championships': 'Conference Championship'};
+function periodsFrom(calendar, yr) {
+  const out = [];
+  for (const c of calendar || []) {
+    const type = +c.value;
+    if (type < 1 || type > 3) continue;
+    for (const e of c.entries || []) {
+      if (/pro bowl/i.test(e.label || '')) continue;
+      out.push({label: PLAYOFF_NAMES[e.label] || e.label || 'Week ' + e.value, type, week: +e.value, pre: type === 1, end: Date.parse(e.endDate) || 0});
+    }
+  }
+  if (out.some(p => p.type === 2)) return out;
+  return [{label: 'Hall of Fame Weekend', type: 1, week: 1, pre: true}].concat([1, 2, 3].map(n => ({label: 'Preseason Week ' + n, type: 1, week: n + 1, pre: true})),
+    Array.from({length: 18}, (_, i) => ({label: 'Week ' + (i + 1), type: 2, week: i + 1})),
+    [{label: 'Wild Card', type: 3, week: 1}, {label: 'Divisional', type: 3, week: 2},
+     {label: 'Conference Championship', type: 3, week: 3}, {label: 'Super Bowl', type: 3, week: yr >= 2026 ? 4 : 5}]);
+}
+const order = p => p.type * 100 + p.week;
+const PERIODS = [];
+/** Switches to another season's list of weeks, staying on the same week if it is in the new list. */
+function usePeriods(list) {
+  const was = period;
+  PERIODS.splice(0, PERIODS.length, ...list);
+  if (was) period = PERIODS.find(x => x.type === was.type && x.week === was.week) || PERIODS[0];
+}
 
 const LS = k => { try { return JSON.parse(localStorage.getItem('nflpickem.' + k)); } catch (e) { return null; } };
 const setLS = (k, v) => { try { localStorage.setItem('nflpickem.' + k, JSON.stringify(v)); } catch (e) { /* storage full or blocked */ } };
@@ -623,7 +655,10 @@ let league = LS('league') || '';
 let profiles = [], picks = {}, profile = null;   // picks: "profile|weekKey|gameId" -> team abbreviation
 let screen = 'login', loadedOnce = false;
 let season = now.getMonth() < 2 ? now.getFullYear() - 1 : now.getFullYear();
-let period = PERIODS[0];
+let period = null;
+usePeriods(LS('cal.' + season) || periodsFrom(null, season));
+period = PERIODS.find(p => p.type === 2) || PERIODS[0];
+let offseason = false;
 let games = [];
 let lastFetch = 0, wasComplete = false, lastKey = null;
 
@@ -923,6 +958,22 @@ function outcome(p, g) {
   return w === 'TIE' ? 'T' : pick === w ? 'W' : 'L';
 }
 
+/** Offseason: show how the last finished season ended, on its Super Bowl. */
+async function goOffseason(yr, cal) {
+  let list = periodsFrom(cal, yr);
+  if (!(Math.max(0, ...list.map(p => p.end || 0)) < Date.now() && list.some(p => p.end))) {   // that season hasn't been played yet
+    yr--;
+    try {
+      const r = await fetch(`${ESPN}?limit=100&dates=${yr}&seasontype=3&week=1`);
+      list = periodsFrom((((await r.json()).leagues || [])[0] || {}).calendar, yr);
+    } catch (e) { list = LS('cal.' + yr) || periodsFrom(null, yr); }
+  }
+  season = yr; offseason = true;
+  usePeriods(list); setLS('cal.' + season, PERIODS);
+  period = PERIODS[PERIODS.length - 1];
+  updateHeader();
+  return loadGames(false);
+}
 async function loadGames(initial) {
   const asked = period;
   try {
@@ -932,14 +983,18 @@ async function loadGames(initial) {
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const j = await r.json();
     if (initial) {
-      season = (j.season && j.season.year) || season;
+      const yr = (j.season && j.season.year) || season;
       const st = j.season && j.season.type;
       const type = (st && typeof st === 'object' ? st.type : st) || 2;
       const week = (j.week && j.week.number) || 1;
-      let p = PERIODS.find(x => x.type === type && x.week === week);
-      if (!p) { p = {label: `Season type ${type} \u2013 Week ${week}`, type, week}; PERIODS.push(p); }
-      period = p;
+      const cal = ((j.leagues || [])[0] || {}).calendar;
+      if (type < 1 || type > 3) return goOffseason(yr, cal);
+      season = yr; offseason = false;
+      usePeriods(periodsFrom(cal, season)); setLS('cal.' + season, PERIODS);
+      const p = PERIODS.find(x => x.type === type && x.week === week);
+      period = p || PERIODS.find(x => order(x) > type * 100 + week) || PERIODS[PERIODS.length - 1];
       updateHeader();
+      if (!p) return loadGames(false);          // a week that isn't picked (the Pro Bowl): show the next one
     } else if (asked !== period) {
       return;                                   // user changed weeks while loading
     }
@@ -1548,21 +1603,30 @@ function pickCell(g, ab, o) {
   return `<td class="pk${o === 'W' ? ' ok' : o === 'L' ? ' bad' : ''}" style="--c:${esc(t.color)};--fg:${contrast(t.color)}">` +
     `<span class="in">${t.logo ? `<img src="${esc(t.logo)}" alt="" loading="lazy">` : ''}${esc(ab)}${res}</span></td>`;
 }
-function render() { renderPicks(); renderScore(); renderStandings(); }
+function renderNote() {
+  const t = offseason ? "<b>Offseason.</b> The new season starts in September. Here's how last season ended."
+    : period.pre ? '<b>Preseason.</b> These picks count only toward the preseason rankings on Standings, not the season.' : '';
+  $('#pnote').innerHTML = t; $('#pnote').classList.toggle('hide', !t);
+}
+function render() { renderNote(); renderPicks(); renderScore(); renderStandings(); }
 
 // ---------------------------------------------------------------- season standings
 const weekOrder = key => { const f = key.split('-'); return (+f[1]) * 100 + (+f[2]); };
 function weekLabel(key) {
   const [, type, week] = key.split('-').map(Number);
   if (type === 2) return 'W' + week;
-  if (type === 3) return {1: 'WC', 2: 'DIV', 3: 'CONF', 5: 'SB'}[week] || 'P' + week;
+  if (type === 3) return {1: 'WC', 2: 'DIV', 3: 'CONF', 4: 'SB', 5: 'SB'}[week] || 'P' + week;
+  if (type === 1) return week === 1 ? 'HOF' : 'P' + (week - 1);
   return 'T' + type + 'W' + week;
 }
 const weekIsFinal = list => list.length > 0 && list.every(g => g.state === 'post');
 let standSeason = null;                              // season shown on Standings (null = the current one)
 const allSeasons = () => [...new Set(Object.keys(picks).map(k => +k.split('|')[1].split('-')[0]))].filter(Boolean).sort((a, b) => b - a);
-const seasonWeeks = () => [...new Set(Object.keys(picks).map(k => k.split('|')[1]))]
+const isPre = key => key.split('-')[1] === '1';
+const allWeeks = () => [...new Set(Object.keys(picks).map(k => k.split('|')[1]))]
   .filter(w => w.startsWith((standSeason || season) + '-')).sort((a, b) => weekOrder(a) - weekOrder(b));
+const seasonWeeks = () => allWeeks().filter(w => !isPre(w));   // the preseason has its own rankings
+const preWeeks = () => allWeeks().filter(isPre);
 let seasonBusy = false, lastSeason = 0;
 
 function renderStandings() {
@@ -1615,18 +1679,54 @@ function renderStandings() {
   if (document.activeElement && document.activeElement.id === 'stseason') { /* being chosen: don't rebuild it */ } else
   $('#sttitle').innerHTML = `${esc(shown)} Season \u2014 ${finals} week${finals === 1 ? '' : 's'} complete` +
     (seasons.length > 1 ? ` <select id="stseason" aria-label="Season">${seasons.map(y => `<option value="${y}"${y === shown ? ' selected' : ''}>${y}</option>`).join('')}</select>` : '');
+  renderPreseason();
   renderTrophies(st, winners, shown);
   renderMyStats(weeks);
   if (!seasonBusy) $('#stnote').textContent = weeks.length
     ? 'Ranked by Pct, then +/\u2212 (each pick adds the margin its team won by, or subtracts the margin it lost by), then total correct. Weekly columns show correct picks.'
+    : preWeeks().length ? 'The season standings start with Week 1. Preseason picks are ranked separately below.'
     : 'Make some picks and the standings will build here.';
+}
+
+/** Preseason rankings: preseason picks only, ranked like the season (Pct, then +/-, then total correct). */
+function renderPreseason() {
+  const box = $('#preseason'), weeks = preWeeks();
+  const st = profiles.map(p => ({p, c: 0, l: 0, d: 0}));
+  for (const key of weeks) {
+    const list = key === wk() ? games : (LS('games.' + key) || []);
+    for (const s of st) for (const g of list) {
+      const pick = picks[`${s.p}|${key}|${g.id}`];
+      if (!pick || g.state !== 'post') continue;
+      const w = winner(g); if (w === 'TIE') continue;
+      if (pick === w) s.c++; else s.l++;
+      const t = g.away.abbr === pick ? g.away : g.home.abbr === pick ? g.home : null;
+      if (t) s.d += t.score - (t === g.away ? g.home : g.away).score;
+    }
+  }
+  const ranked = st.filter(s => s.c + s.l);
+  if (!ranked.length) {
+    box.innerHTML = weeks.length ? '<div class="wzbox" style="margin:0 12px 12px"><h4>Preseason rankings</h4><div class="muted">Results show here once preseason games finish. They don\'t count toward the season.</div></div>' : '';
+    return;
+  }
+  const pct = s => s.c / (s.c + s.l);
+  ranked.sort((a, b) => pct(b) - pct(a) || b.d - a.d || b.c - a.c || cmp(a.p, b.p));
+  let rank = 0;
+  const rows = ranked.map((s, i) => {
+    const prev = ranked[i - 1];
+    if (!prev || pct(prev) !== pct(s) || prev.d !== s.d || prev.c !== s.c) rank = i + 1;
+    return `<tr${rank === 1 ? ' class="lead"' : ''}><td><span class="rk${rank <= 3 ? ' r' + rank : ''}">${rank}</span>${esc(s.p)}</td><td>${pct(s).toFixed(3).replace(/^0/, '')}</td>` +
+      `<td class="${s.d > 0 ? 'pos' : s.d < 0 ? 'neg' : ''}">${(s.d > 0 ? '+' : '') + s.d}</td><td>${s.c}</td><td>${s.l}</td></tr>`;
+  }).join('');
+  box.innerHTML = `<div class="wzbox" style="margin:0 12px 12px"><h4>Preseason rankings</h4><div class="tw"><table class="pretable">` +
+    `<tr><th>Player</th><th>Pct</th><th>+/\u2212</th><th>Correct</th><th>Wrong</th></tr>${rows}</table></div>` +
+    `<div class="muted" style="font-size:12px;margin-top:6px">Just for fun: preseason picks don't count toward the season standings.</div></div>`;
 }
 
 /** Trophy case: weekly wins, perfect weeks, the season's longest streak, the champion, and each week's winner. */
 function renderTrophies(st, winners, yr) {
   const box = $('#trophies');
   if (!winners.length) { box.innerHTML = ''; return; }
-  const streak = Math.max(0, ...st.map(s => s.best)), sb = LS(`games.${yr}-3-5`) || [];
+  const streak = Math.max(0, ...st.map(s => s.best)), sb = [5, 4].map(w => LS(`games.${yr}-3-${w}`)).find(l => l && l.length) || [];   // the Super Bowl was week 5 until 2026
   const champ = weekIsFinal(sb) && st.length ? st[0].p : null;      // standings are already in rank order
   const rows = st.filter(s => s.won || s.perfect || (streak && s.best === streak)).map(s => `<div class="tr"><b>${esc(s.p)}</b><span>` +
     (s.p === champ ? '<i title="Season champion">&#128081; Champion</i>' : '') +
@@ -1698,7 +1798,7 @@ function renderMyStats(weeks) {
 /** Loads results for earlier weeks that have picks but are not fully final in the saved copy. */
 async function loadSeason(force) {
   if (seasonBusy || (!force && Date.now() - lastSeason < 120000)) return;
-  const todo = seasonWeeks().filter(key => key !== wk() && !weekIsFinal(LS('games.' + key) || []));
+  const todo = allWeeks().filter(key => key !== wk() && !weekIsFinal(LS('games.' + key) || []));
   lastSeason = Date.now();
   if (!todo.length) { renderStandings(); return; }
   seasonBusy = true;

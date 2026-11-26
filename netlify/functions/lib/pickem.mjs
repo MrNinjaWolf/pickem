@@ -21,9 +21,28 @@ const AUTH = () => E('PICKEM_AUTH_BASE') || 'https://identitytoolkit.googleapis.
 const now = () => E('PICKEM_NOW') ? Date.parse(E('PICKEM_NOW')) : Date.now();
 export const appUrl = () => E('APP_URL') || E('URL') || 'https://dak-nfl.netlify.app';
 
-export const PERIODS = Array.from({length: 18}, (_, i) => ({label: 'Week ' + (i + 1), type: 2, week: i + 1})).concat([
-  {label: 'Wild Card', type: 3, week: 1}, {label: 'Divisional', type: 3, week: 2},
-  {label: 'Conference Championship', type: 3, week: 3}, {label: 'Super Bowl', type: 3, week: 5}]);
+// The weeks of a season, in order, from ESPN's own calendar (it changes: the 2026 season dropped the
+// Pro Bowl week, so the Super Bowl moved from playoff week 5 to week 4). The Pro Bowl is never picked.
+// Preseason weeks are marked pre: their picks count only toward the preseason rankings, and no
+// emails or notifications go out for them.
+const PLAYOFF_NAMES = {'Divisional Round': 'Divisional', 'Conference Championships': 'Conference Championship'};
+export function periodsFrom(calendar, season) {
+  const out = [];
+  for (const c of calendar || []) {
+    const type = +c.value;
+    if (type < 1 || type > 3) continue;
+    for (const e of c.entries || []) {
+      if (/pro bowl/i.test(e.label || '')) continue;
+      out.push({label: PLAYOFF_NAMES[e.label] || e.label || `Week ${e.value}`, type, week: +e.value, pre: type === 1});
+    }
+  }
+  if (out.some(p => p.type === 2)) return out;
+  return [{label: 'Hall of Fame Weekend', type: 1, week: 1, pre: true}].concat([1, 2, 3].map(n => ({label: 'Preseason Week ' + n, type: 1, week: n + 1, pre: true})),
+    Array.from({length: 18}, (_, i) => ({label: 'Week ' + (i + 1), type: 2, week: i + 1})),
+    [{label: 'Wild Card', type: 3, week: 1}, {label: 'Divisional', type: 3, week: 2},
+     {label: 'Conference Championship', type: 3, week: 3}, {label: 'Super Bowl', type: 3, week: season >= 2026 ? 4 : 5}]);
+}
+const order = p => p.type * 100 + p.week;
 
 // ---------------------------------------------------------------- Firebase
 async function post(url, body) {
@@ -69,23 +88,32 @@ async function espn(query) {
   if (!r.ok) throw new Error('ESPN HTTP ' + r.status);
   return r.json();
 }
-async function loadWeek(season, i) {
-  const p = PERIODS[i];
+async function loadWeek(season, list, i) {
+  const p = list[i];
   const j = await espn(`&dates=${season}&seasontype=${p.type}&week=${p.week}`);
-  return {i, label: p.label, key: `${season}-${p.type}-${p.week}`, games: (j.events || []).map(parseGame)};
+  return {i, label: p.label, pre: !!p.pre, key: `${season}-${p.type}-${p.week}`, games: (j.events || []).map(parseGame)};
 }
-/** The week ESPN calls current, plus the weeks either side of it. */
+/** The week ESPN calls current, plus the weeks either side of it. During the Pro Bowl week that is the
+ *  Super Bowl week; in the offseason there is none. */
 async function nearbyWeeks() {
   const j = await espn('');
   const season = (j.season && j.season.year) || new Date(now()).getFullYear();
   const st = j.season && j.season.type, type = (st && typeof st === 'object' ? st.type : st) || 2;
-  const i = PERIODS.findIndex(p => p.type === type && p.week === ((j.week && j.week.number) || 1));
-  if (i < 0) return [];                                       // preseason or offseason: nothing to send
-  const cur = {i, label: PERIODS[i].label, key: `${season}-${type}-${PERIODS[i].week}`, games: (j.events || []).map(parseGame)};
+  if (type < 1 || type > 3) return [];                        // offseason: nothing to send
+  const list = periodsFrom(((j.leagues || [])[0] || {}).calendar, season);
+  const at = {type, week: (j.week && j.week.number) || 1};
+  let i = list.findIndex(p => p.type === at.type && p.week === at.week);
+  let cur;
+  if (i >= 0) cur = {i, label: list[i].label, pre: !!list[i].pre, key: `${season}-${type}-${list[i].week}`, games: (j.events || []).map(parseGame)};
+  else {                                                      // a week that isn't picked (the Pro Bowl): use the next one
+    i = list.findIndex(p => order(p) > order(at));
+    if (i < 0) return [];
+    cur = await loadWeek(season, list, i);
+  }
   const out = [];
-  if (i > 0) out.push(await loadWeek(season, i - 1));
+  if (i > 0) out.push(await loadWeek(season, list, i - 1));
   out.push(cur);
-  if (i < PERIODS.length - 1) out.push(await loadWeek(season, i + 1));
+  if (i < list.length - 1) out.push(await loadWeek(season, list, i + 1));
   return out;
 }
 
@@ -138,7 +166,7 @@ const winner = g => g.away.score > g.home.score ? g.away.abbr : g.home.score > g
 async function seasonTable(d, lg, season, weekGames) {
   const all = ((d.leagues[lg] || {}).picks) || {};
   const st = Object.keys(d.leagues[lg].profiles || {}).map(n => ({n, c: 0, l: 0, d: 0}));
-  for (const key of Object.keys(all).filter(k => k.startsWith(season + '-'))) {
+  for (const key of Object.keys(all).filter(k => k.startsWith(season + '-') && k.split('-')[1] !== '1')) {   // preseason doesn't count
     const games = await weekGames(key);
     for (const s of st) {
       const p = (all[key] || {})[s.n] || {};
@@ -306,7 +334,7 @@ export async function runOnce({transport = mailer(), log = console.log} = {}) {
   const canPush = !!(keys && phones.length);
 
   for (const w of weeks) {
-    if (!w.games.length) continue;
+    if (!w.games.length || w.pre) continue;                     // no emails or notifications for the preseason
     const times = w.games.map(g => Date.parse(g.date)).filter(x => !isNaN(x));
     const last = Math.max(...times);
 
@@ -379,7 +407,7 @@ export async function remindNow({transport = mailer(), log = console.log} = {}) 
   const q = database(await signInMailer());
   const weeks = await nearbyWeeks(), t = now();
   const {d, phones, s} = await loadState(q);
-  const w = weeks.find(x => x.games.some(g => g.state === 'pre' && Date.parse(g.date) > t));
+  const w = weeks.find(x => !x.pre && x.games.some(g => g.state === 'pre' && Date.parse(g.date) > t));
   if (!w) return {emails: 0, phones: 0, week: null};
   const open = w.games.filter(g => g.state === 'pre' && Date.parse(g.date) > t);
   const slot = {suffix: '-now', first: Math.min(...open.map(g => Date.parse(g.date))), games: open, perDay: false};

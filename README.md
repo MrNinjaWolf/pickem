@@ -34,8 +34,13 @@ into Firebase by hand: **Build > Realtime Database > Rules**, replace everything
 - Creating logins on the Admin tab goes through the server (it needs `FIREBASE_SERVICE_ACCOUNT`).
   With that set up, switch off Firebase's public sign-up so nobody else can make accounts:
   Authentication > Settings > User actions > untick **Enable create (sign-up)**.
-- The app stops picks at kickoff. The database rules don't check kickoff times, so a technical
-  user could still change their own pick after a game starts.
+- Picks lock at kickoff, in the app and in the database rules (the email job saves each game's
+  kickoff time).
+- The weeks come from ESPN's calendar: preseason, Weeks 1-18, then Wild Card, Divisional,
+  Conference Championship and Super Bowl. The Pro Bowl is skipped.
+- Preseason picks count only toward the **Preseason rankings** on Standings, not the season
+  standings, and no emails or notifications go out for the preseason.
+- In the offseason the app opens on last season's Super Bowl with an offseason note.
 
 ## Reminder emails (one-time setup)
 
