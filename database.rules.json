@@ -39,6 +39,12 @@
         },
         "$other": {
           ".validate": false
+        },
+        "archive": {
+          "$season": {
+            ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'dakota@pickem.app'",
+            ".validate": "$season.matches(/^20[0-9][0-9]$/) && newData.hasChildren(['at', 'rows']) && newData.child('at').isNumber()"
+          }
         }
       }
     },
@@ -80,8 +86,7 @@
         "$game": {
           ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
           ".validate": "newData.isNumber()"
-        },
-        ".write": "(auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app') && !newData.exists()"
+        }
       }
     },
     "resets": {
@@ -163,6 +168,17 @@
               }
             }
           }
+        }
+      }
+    },
+    "prefs": {
+      ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'mailer@pickem.app'",
+      "$user": {
+        ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app') && auth.token.email.toLowerCase().replace('@pickem.app', '') === $user",
+        ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase().endsWith('@pickem.app') && auth.token.email.toLowerCase().replace('@pickem.app', '') === $user",
+        ".validate": "newData.hasChildren()",
+        "$key": {
+          ".validate": "newData.isBoolean() && $key.matches(/^(resultsEmail|resultsPush|remindEmail|remindPush|gamePush|cfpEmail|cfpPush)$/)"
         }
       }
     }

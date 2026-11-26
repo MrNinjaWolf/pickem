@@ -78,20 +78,6 @@ main{max-width:760px;margin:0 auto}
 .rk25 .rec{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 .rk25 .mv{font-size:12px;font-weight:800;text-align:right}.rk25 .mv.up{color:var(--green)}.rk25 .mv.dn{color:var(--bad)}.rk25 .mv.nw{color:var(--gold)}
 .brnd{margin:16px 4px 6px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.mu{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);margin-bottom:10px;overflow:hidden}
-.mu .mt{display:flex;justify-content:space-between;gap:8px;padding:7px 12px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--line)}
-.ct{display:grid;grid-template-columns:22px 26px 1fr auto;align-items:center;gap:9px;width:100%;padding:10px 12px;border:0;background:none;color:var(--text);text-align:left;font-weight:700;font-size:15px;transition:background .2s}
-.ct + .ct{border-top:1px solid var(--line)}
-.ct .sd{font-size:12px;color:var(--muted);text-align:center;font-weight:800}
-.ct img{width:26px;height:26px;object-fit:contain}
-.ct .mk{font-size:13px;font-weight:800;color:var(--muted)}
-.ct.sel{background:linear-gradient(90deg,color-mix(in srgb,var(--c) 45%,transparent),transparent)}
-.ct.sel .mk{color:var(--gold)}
-.ct.right .mk{color:var(--green)}.ct.wrong,.ct.dead{opacity:.6}.ct.wrong .nm,.ct.dead .nm{text-decoration:line-through}.ct.wrong .mk,.ct.dead .mk{color:var(--bad)}
-.ct.ph{color:var(--muted);font-weight:600;font-size:13px;cursor:default}
-.ct:disabled{cursor:default}
-.mu .real{padding:6px 12px;font-size:12px;color:var(--muted);border-top:1px dashed var(--line)}
-.mu .real b{color:var(--text)}
 .champ{display:flex;align-items:center;gap:12px;padding:14px;border-radius:var(--radius);border:1px solid var(--line);background:linear-gradient(135deg,color-mix(in srgb,var(--c,#ffc53d) 50%,transparent),var(--surface) 85%)}
 .champ img{width:44px;height:44px;object-fit:contain}
 .champ b{font-size:18px}.champ span{display:block;font-size:12px;color:var(--muted)}
@@ -161,6 +147,9 @@ select option{color:#000}
 .pnote{margin:12px 16px 0;padding:10px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--line);font-size:13px;color:var(--muted)}
 .pnote b{color:var(--gold)}
 .wzbox .tw{margin:0;box-shadow:none}
+.past{border-top:1px solid var(--line);padding:10px 0}
+.past summary{cursor:pointer;font-size:14px;display:flex;flex-wrap:wrap;gap:6px;align-items:baseline}
+.past summary small{color:var(--muted);margin-left:auto}
 .pretable th,.pretable td{padding:9px 7px}.pretable th{letter-spacing:.04em}
 #preseason .wzbox{padding:12px 10px}
 #summary b{color:var(--text);font-size:17px}
@@ -282,6 +271,9 @@ td.neg{color:var(--bad)}
 /* ---------- live */
 #t-live.has::after{content:"";position:absolute;top:7px;right:10px;width:7px;height:7px;border-radius:50%;background:var(--bad);animation:blink 1.2s ease-in-out infinite}
 #livebox{padding:8px 12px 56px;display:flex;flex-direction:column;gap:12px}
+.clist{display:flex;flex-direction:column;gap:12px}
+.lnote{font-size:11px;color:var(--gold);font-weight:700;margin-bottom:4px;text-align:left}
+.rkn{font-style:normal;font-size:11px;color:var(--muted);font-weight:800;margin-right:4px}
 .lempty{text-align:center;padding:40px 18px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);color:var(--muted)}
 .lempty b{display:block;color:var(--text);font-size:18px;margin-bottom:6px}
 .lempty .big{font-size:40px;margin-bottom:8px}
@@ -464,7 +456,6 @@ td.neg{color:var(--bad)}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 @media (min-width:700px){.card{grid-template-columns:1fr 110px 1fr}.team{min-height:140px}}
 </style>
-<script src="config.js"></script>
 </head>
 <body>
 <header class="top">
@@ -491,8 +482,9 @@ td.neg{color:var(--bad)}
       <button id="t-score" type="button">Scorecard</button>
       <button id="t-stand" type="button">Standings</button>
     </div>
-    <div class="tabs hide" id="cfptabs" role="tablist" style="--n:3">
+    <div class="tabs hide" id="cfptabs" role="tablist" style="--n:4">
       <span class="tabind" id="cfpind"></span>
+      <button id="c-live" type="button">Live</button>
       <button id="c-top" class="on" type="button">Top 25</button>
       <button id="c-br" type="button">Bracket</button>
       <button id="c-lb" type="button">Leaderboard</button>
@@ -574,6 +566,7 @@ td.neg{color:var(--bad)}
       <div id="preseason"></div>
       <div id="trophies"></div>
       <div id="mystats"></div>
+      <div id="pastseasons"></div>
     </section>
     <section id="cfp" class="hide"><div id="cfpbox"></div></section>
     <section id="live" class="view hide">
@@ -605,6 +598,20 @@ td.neg{color:var(--bad)}
           <button class="btn full" id="pushbtn" type="button" style="width:100%;margin-top:12px">Turn on notifications</button>
           <button class="btn alt full hide" id="pushtest" type="button" style="width:100%;margin-top:8px">Send me a test notification</button>
           <div class="err" id="pushmsg"></div>
+        </div>
+        <div class="wzbox ns" id="pfprefs">
+          <h3 style="margin:0">What you get</h3>
+          <p class="muted" style="margin:4px 0 0">Choose your own emails and phone notifications. Phone notifications also need to be turned on above.</p>
+          <h4>NFL</h4>
+          <label class="sw"><input type="checkbox" data-pref="resultsEmail"><span>Results email when a week is final</span></label>
+          <label class="sw"><input type="checkbox" data-pref="resultsPush"><span>Results notification when a week is final</span></label>
+          <label class="sw"><input type="checkbox" data-pref="remindEmail"><span>Reminder email when you're missing picks</span></label>
+          <label class="sw"><input type="checkbox" data-pref="remindPush"><span>Reminder notification when you're missing picks</span></label>
+          <label class="sw"><input type="checkbox" data-pref="gamePush"><span>Notification when each game you picked ends</span></label>
+          <h4>College Football Playoff</h4>
+          <label class="sw"><input type="checkbox" data-pref="cfpEmail"><span>Bracket emails (bracket announced, reminder before the lock)</span></label>
+          <label class="sw"><input type="checkbox" data-pref="cfpPush"><span>Bracket notifications (announced, reminder, after each round)</span></label>
+          <div class="err" id="prefmsg"></div>
         </div>
         <button class="btn alt" id="acctlogout" type="button" style="width:100%;margin-top:12px">Log out</button>
       </div>
@@ -688,6 +695,14 @@ td.neg{color:var(--bad)}
           <h4>Brackets</h4>
           <ul class="alog" id="cs-who"></ul>
         </div>
+        <div class="wzbox pfform" id="arbox">
+          <h3 style="margin:0">Season archive</h3>
+          <p class="muted" style="margin:4px 0 0">Save a season's final standings for good (they show under <b>Past seasons</b> on Standings), or download them as a spreadsheet (CSV).</p>
+          <label class="row2"><span>Season</span><select id="arseason" aria-label="Season"></select></label>
+          <p class="muted" id="arstate" style="margin:4px 0 8px"></p>
+          <div class="wzfoot" style="margin-top:0"><button class="btn" id="arsave" type="button">Save final standings</button><button class="btn alt" id="arcsv" type="button">Download CSV</button></div>
+          <div class="err" id="armsg"></div>
+        </div>
         <div class="wzbox">
           <h3 style="margin:0">Activity</h3>
           <p class="muted" style="margin:4px 0 0">Admin changes, password resets and sends from the last 6 months.</p>
@@ -745,9 +760,8 @@ const clean = s => String(s).replace(/[\t\r\n|.$#\[\]\/"\\]/g, ' ').trim().slice
 const contrast = hex => { const n = parseInt(hex.replace('#', ''), 16); return (0.299 * (n >> 16) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) > 150 ? '#000' : '#fff'; };
 
 const now = new Date();
-const CFG0 = window.PICKEM_CONFIG || {};
 const savedCfg = LS('cfg') || {};
-let cfg = {url: String(CFG0.databaseUrl || savedCfg.url || '').trim().replace(/\/+$/, ''), key: String(CFG0.apiKey || savedCfg.key || '').trim()};
+let cfg = {url: String(savedCfg.url || '').trim().replace(/\/+$/, ''), key: String(savedCfg.key || '').trim()};
 let auth = LS('auth');                    // {user, refresh, id, exp} - the saved login
 let leagues = LS('leagues') || [];        // databases this user has been given
 let league = LS('league') || '';
@@ -933,11 +947,10 @@ function showScreen(s) {
   $('#appnav').classList.toggle('hide', s !== 'app');
   updateModeSwitch();
 }
-/** The database URL and API key come from config.js, else from the site's Netlify settings (/api/config),
- *  else from the last copy saved on this device. */
+/** The database URL and API key come from the site's Netlify settings (/api/config), else from the last
+ *  copy saved on this device. */
 let vapidKey = LS('vapid') || '';                   // public key for phone notifications (from /api/config)
 async function ensureConfig() {
-  if (CFG0.databaseUrl && CFG0.apiKey && vapidKey) return true;
   try {
     const r = await fetch('/api/config', {cache: 'no-store'});
     if (r.ok) {
@@ -1730,8 +1743,8 @@ const seasonWeeks = () => allWeeks().filter(w => !isPre(w));   // the preseason 
 const preWeeks = () => allWeeks().filter(isPre);
 let seasonBusy = false, lastSeason = 0;
 
-function renderStandings() {
-  const weeks = seasonWeeks();
+/** Season standings from the picks and each week's results: players ranked by Pct, +/-, then total correct. */
+function computeStandings(weeks) {
   const st = profiles.map(p => ({p, c: 0, l: 0, d: 0, won: 0, by: [], perfect: 0, run: 0, best: 0}));   // d: point differential of every decided pick
   const winners = [];
   let finals = 0;
@@ -1763,6 +1776,11 @@ function renderStandings() {
   // Ranked by 1. win percentage, 2. point differential, 3. total correct
   const pctOf = s => s.c + s.l ? s.c / (s.c + s.l) : -1;
   st.sort((a, b) => pctOf(b) - pctOf(a) || b.d - a.d || b.c - a.c || cmp(a.p, b.p));
+  return {st, winners, finals};
+}
+function renderStandings() {
+  const weeks = seasonWeeks(), {st, winners, finals} = computeStandings(weeks);
+  const pctOf = s => s.c + s.l ? s.c / (s.c + s.l) : -1;
   const same = (a, b) => pctOf(a) === pctOf(b) && a.d === b.d && a.c === b.c;
   let rank = 0;
   const rows = st.map((s, i) => {
@@ -1821,6 +1839,74 @@ function renderPreseason() {
   box.innerHTML = `<div class="wzbox" style="margin:0 12px 12px"><h4>Preseason rankings</h4><div class="tw"><table class="pretable">` +
     `<tr><th>Player</th><th>Pct</th><th>+/\u2212</th><th>Correct</th><th>Wrong</th></tr>${rows}</table></div>` +
     `<div class="muted" style="font-size:12px;margin-top:6px">Just for fun: preseason picks don't count toward the season standings.</div></div>`;
+}
+
+// ---- Season archive (/leagues/<db>/archive/<season>): final standings kept for good, plus a CSV download
+let archives = {};
+async function loadArchives() {
+  try { archives = (await dbCall('GET', dbBase() + '/archive')) || {}; } catch (e) { /* offline or older rules */ }
+  renderPastSeasons(); renderArchiveAdmin();
+}
+const fmtPct3 = (c, l) => c + l ? (c / (c + l)).toFixed(3).replace(/^0/, '') : '\u2014';
+function renderPastSeasons() {
+  const box = $('#pastseasons'), yrs = Object.keys(archives).sort((a, b) => b - a);
+  if (!yrs.length) { box.innerHTML = ''; return; }
+  box.innerHTML = '<div class="wzbox" style="margin:0 12px 12px"><h4>Past seasons</h4>' + yrs.map(y => {
+    const a = archives[y] || {}, rows = a.rows || [], top = rows[0];
+    const head = `<b>${esc(y)}</b> ${a.champ ? `\u{1F451} ${esc(a.champ)}` : top ? `Leader: ${esc(top.p)}` : ''}${a.cfpWinner ? ` \u2022 CFP bracket: ${esc(a.cfpWinner)}` : ''}`;
+    const body = rows.map((r, i) => `<tr><td><span class="rk${i < 3 ? ' r' + (i + 1) : ''}">${i + 1}</span>${esc(r.p)}</td><td>${fmtPct3(r.c, r.l)}</td>` +
+      `<td class="${r.d > 0 ? 'pos' : r.d < 0 ? 'neg' : ''}">${(r.d > 0 ? '+' : '') + (r.d || 0)}</td><td>${r.c}-${r.l}</td><td>${r.won || 0}</td></tr>`).join('');
+    return `<details class="past"><summary>${head}<small>${a.weeks || 0} weeks</small></summary><div class="tw" style="margin:8px 0 0"><table>` +
+      `<tr><th>Player</th><th>Pct</th><th>+/\u2212</th><th>W-L</th><th>Weeks won</th></tr>${body}</table></div></details>`;
+  }).join('') + '</div>';
+}
+function renderArchiveAdmin() {
+  if (!isAdmin()) return;
+  const sel = $('#arseason'), cur = sel.value, yrs = [...new Set([season, ...allSeasons(), ...Object.keys(archives).map(Number)])].filter(Boolean).sort((a, b) => b - a);
+  sel.innerHTML = yrs.map(y => `<option value="${y}"${String(y) === cur ? ' selected' : ''}>${y}</option>`).join('');
+  const a = archives[sel.value];
+  $('#arstate').textContent = a ? `Saved ${new Date(a.at).toLocaleDateString([], {month: 'short', day: 'numeric', year: 'numeric'})}: ${(a.rows || []).length} players, ${a.weeks || 0} weeks.` : 'Not saved yet.';
+}
+/** Standings for one season, with every week's results loaded first. */
+async function seasonStandings(yr) {
+  const was = standSeason;
+  standSeason = yr === season ? null : yr;
+  try { await loadSeason(true); return {...computeStandings(seasonWeeks()), weeks: seasonWeeks()}; }
+  finally { standSeason = was; renderStandings(); }
+}
+async function saveArchive() {
+  const m = $('#armsg'), yr = +$('#arseason').value; m.classList.remove('ok');
+  if (archives[yr] && !confirm(`Replace the saved ${yr} standings?`)) return;
+  $('#arsave').disabled = true; m.textContent = 'Working\u2026';
+  try {
+    const {st, finals, weeks} = await seasonStandings(yr);
+    const sb = [5, 4].map(w => LS(`games.${yr}-3-${w}`)).find(l => l && l.length) || [];
+    const rec = {at: Date.now(), weeks: finals, rows: st.filter(r => r.c + r.l).map(r => ({p: r.p, c: r.c, l: r.l, d: r.d, won: r.won, perfect: r.perfect, best: r.best}))};
+    if (weekIsFinal(sb) && rec.rows.length) rec.champ = rec.rows[0].p;
+    if (K && cfp.season === yr && cfp.br && cfp.br.finalTotal !== null && cfp.all) {          // the CFP bracket winner, once the title game is final
+      const lb = K.leaderboard(cfp.br, cfp.all, cfp.s.scoring);
+      if (lb.length) rec.cfpWinner = lb.filter(r => r.rank === 1).map(r => r.name).join(', ');
+    }
+    if (!rec.rows.length) throw new Error(`No finished games with picks in ${yr}.`);
+    await dbCall('PUT', dbBase() + '/archive/' + yr, rec);
+    archives[yr] = rec; renderPastSeasons(); renderArchiveAdmin();
+    m.classList.add('ok'); m.textContent = `Saved the ${yr} standings (${weeks.length} weeks).`; adminLog(`Saved the ${yr} season standings`);
+  } catch (e) { m.textContent = e.status ? friendly(e) : e.message; }
+  $('#arsave').disabled = false;
+}
+async function downloadCsv() {
+  const m = $('#armsg'), yr = +$('#arseason').value; m.classList.remove('ok'); m.textContent = 'Working\u2026';
+  try {
+    const {st, weeks} = await seasonStandings(yr);
+    const q = v => /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v);
+    const lines = [['Rank', 'Player', 'Pct', '+/-', 'Correct', 'Wrong', 'Weeks won', 'Perfect weeks', ...weeks.map(weekLabel)].map(q).join(',')];
+    st.forEach((r, i) => lines.push([i + 1, r.p, fmtPct3(r.c, r.l), r.d, r.c, r.l, r.won, r.perfect, ...r.by.map(v => v === null ? '' : v)].map(q).join(',')));
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([lines.join('\r\n') + '\r\n'], {type: 'text/csv'}));
+    a.download = `pickem-${league}-${yr}-standings.csv`.replace(/[^\w.-]+/g, '-');
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    m.classList.add('ok'); m.textContent = 'Downloaded.';
+  } catch (e) { m.textContent = e.message; }
 }
 
 /** Trophy case: weekly wins, perfect weeks, the season's longest streak, the champion, and each week's winner. */
@@ -1933,8 +2019,8 @@ function showTab(t) {
   if (t !== 'prof' && t !== 'admin') lastTab = t;
   $('#weeknav').classList.toggle('collapsed', t === 'live' || t === 'admin' || t === 'prof');
   moveTabIndicator();
-  if (t === 'stand') loadSeason(false);
-  if (t === 'admin') { renderAdmin(); loadCfpAdmin(); checkRules(false); loadEmails(); loadMailLog(); loadNotifySettings(); loadActivity(); if (Date.now() - live.at > 60000) loadLive(); }
+  if (t === 'stand') { loadSeason(false); loadArchives(); }
+  if (t === 'admin') { renderAdmin(); loadCfpAdmin(); loadArchives(); checkRules(false); loadEmails(); loadMailLog(); loadNotifySettings(); loadActivity(); if (Date.now() - live.at > 60000) loadLive(); }
   if (t === 'live') { renderLive(); if (Date.now() - live.at > 15000) loadLive(); if (liveGame) loadGameSummary(liveGame); }
 }
 function moveTabIndicator() {
@@ -2000,6 +2086,7 @@ async function loadCfp(force) {
     if (post) cfp.br = C.bracketFrom(post.events);
     if (!rk && !post) throw new Error('offline');
     await loadBrackets();
+    loadCfbLive();
     if (!cfp.chosen && cfp.br && cfp.br.set) cfp.tab = 'br';      // once the bracket is out, open on it
     cfp.at = Date.now();
     setStatus('Updated ' + timeStr(), 'cfp');
@@ -2020,10 +2107,78 @@ async function loadBrackets() {
 
 function renderCfp() {
   if (mode !== 'cfp') return;
-  ['top', 'br', 'lb'].forEach((t, i) => { $('#c-' + t).classList.toggle('on', cfp.tab === t); if (cfp.tab === t) $('#cfpind').style.transform = `translateX(${i * 100}%)`; });
+  ['live', 'top', 'br', 'lb'].forEach((t, i) => { $('#c-' + t).classList.toggle('on', cfp.tab === t); if (cfp.tab === t) $('#cfpind').style.transform = `translateX(${i * 100}%)`; });
   const box = $('#cfpbox');
   if (!K) { box.innerHTML = '<div class="cfpinfo">Loading…</div>'; return; }
+  if (cfp.tab === 'live') { renderCfpLive(); return; }
   box.innerHTML = cfp.tab === 'top' ? cfpTopHtml() : cfp.tab === 'br' ? cfpBracketHtml() : cfpBoardHtml();
+}
+
+// ---- Live (college): playoff games and games with a Top 25 team
+const clive = {games: [], at: 0, busy: false, game: null, sums: {}};
+async function loadCfbLive() {
+  if (clive.busy) return;
+  clive.busy = true;
+  try {
+    const C = await cfpCore();
+    const r = await fetch(C.ESPN_CFB + '/scoreboard?groups=80&limit=300');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    clive.games = (j.events || []).map(ev => {
+      const g = parseGame(ev), c = ev.competitions[0], si = c.situation || {};
+      for (const x of c.competitors || []) {
+        const rk = (x.curatedRank || {}).current, side = x.homeAway === 'home' ? 'home' : 'away';
+        if (rk >= 1 && rk <= 25) g[side].rank = rk;
+      }
+      const note = (c.notes || []).map(n => n.headline || '').join(' ');
+      g.playoff = /college football playoff/i.test(note); g.note = note;
+      g.sit = {dd: si.downDistanceText || '', pos: String(si.possession || ''), last: (si.lastPlay && si.lastPlay.text) || '', rz: !!si.isRedZone};
+      return g;
+    }).filter(g => g.playoff || g.away.rank || g.home.rank)
+      .sort((a, b) => (b.playoff - a.playoff) || (Math.min(a.away.rank || 99, a.home.rank || 99) - Math.min(b.away.rank || 99, b.home.rank || 99)) || byDate(a, b));
+    clive.at = Date.now();
+  } catch (e) { /* offline: keep the last copy */ }
+  clive.busy = false;
+  $('#c-live').classList.toggle('has', clive.games.some(g => g.state === 'in'));
+  if (mode === 'cfp' && cfp.tab === 'live') renderCfp();
+}
+async function loadCfbGame(id) {
+  try {
+    const C = await cfpCore(), r = await fetch(C.ESPN_CFB + '/summary?event=' + encodeURIComponent(id));
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    clive.sums[id] = {t: Date.now(), d: readGameSummary(await r.json())};
+  } catch (e) { if (!clive.sums[id]) clive.sums[id] = {t: 0, d: null, fail: true}; }
+  if (mode === 'cfp' && cfp.tab === 'live' && clive.game === id) renderCfp();
+}
+/** Your bracket pick for a playoff game, as a chip ("Your bracket: UGA, winning by 3"). */
+function bracketChip(g) {
+  if (!g.playoff || !cfp.br || !K) return '';
+  const k = K.ORDER.find(x => (cfp.br.slot[x].game || {}).id === g.id), id = k && ((cfp.draft || {}).p || {})[k];
+  const t = id && cfp.br.teams[id];
+  return t ? pickChip(g, t.abbr, 'Your bracket') : '';
+}
+function renderCfpLive() {
+  const box = $('#cfpbox');
+  if (clive.game) {
+    const g = clive.games.find(x => x.id === clive.game);
+    if (g) { keepGamePlace('#cfpbox', () => { box.innerHTML = gameHtml(g, clive.sums[g.id], bracketChip(g), 'data-cback'); }); return; }
+    clive.game = null;
+  }
+  const on = clive.games.filter(g => g.state === 'in');
+  const finals = clive.games.filter(g => g.state === 'post' && Date.now() - Date.parse(g.date) < 16 * 3600e3);
+  const card = (g, i, fin) => `<button type="button" class="lcard${fin ? ' fin' : ''}" data-clive="${esc(g.id)}" style="animation:rise .4s var(--ease) both;animation-delay:${i * 40}ms">` +
+    (g.note ? `<div class="lnote">${esc(g.note.replace(/ Presented by.*$/i, ''))}</div>` : '') + liveRow(g, 'away') + liveRow(g, 'home') +
+    `<div class="lmeta"><span class="${fin ? 'f' : 'q'}">${esc(g.detail || (fin ? 'Final' : ''))}</span><span>${fin ? '' : esc(g.sit.dd)}</span></div>` +
+    (!fin && g.sit.last ? `<div class="lplay">${esc(g.sit.last)}</div>` : '') + bracketChip(g) + '</button>';
+  let html = '<div class="cfphead"><h2>Live</h2><p>College Football Playoff games and games with a Top 25 team.</p></div><div class="clist">';
+  if (!clive.at && !on.length) html += '<div class="lempty"><div class="wzwait loading">Loading live scores…</div></div>';
+  else if (!on.length) {
+    const next = clive.games.find(g => g.state === 'pre' && Date.parse(g.date) > Date.now());
+    html += `<div class="lempty"><div class="big">&#127944;</div><b>No ranked or playoff games are being played right now.</b>` +
+      (next ? `Next: ${kickoff(next)}<br>${next.away.rank ? '#' + next.away.rank + ' ' : ''}${esc(next.away.abbr)} @ ${next.home.rank ? '#' + next.home.rank + ' ' : ''}${esc(next.home.abbr)}` : 'Check back on game day.') + '</div>';
+  } else html += on.map((g, i) => card(g, i, false)).join('');
+  if (finals.length) html += '<h4 class="lhead">Final today</h4>' + finals.map((g, i) => card(g, i, true)).join('');
+  box.innerHTML = html + '</div>';
 }
 
 // ---- Top 25
@@ -2384,19 +2539,18 @@ async function loadLive() {
   if (!$('#live').classList.contains('hide')) renderLive();
 }
 const myLivePick = g => myProfile() && picks[`${myProfile()}|${live.key}|${g.id}`];
-function pickChip(g) {
-  const ab = myLivePick(g);
-  if (!ab) return '<span class="lpick">No pick</span>';
+function pickChip(g, ab = myLivePick(g), label = 'Your pick') {
+  if (!ab) return label === 'Your pick' ? '<span class="lpick">No pick</span>' : '';
   const t = g.away.abbr === ab ? g.away : g.home, o = t === g.away ? g.home : g.away, d = t.score - o.score;
   const done = g.state === 'post';
   const cls = d > 0 ? 'win' : d < 0 ? 'lose' : '';
   const word = d === 0 ? 'tied' : done ? (d > 0 ? `won by ${d}` : `lost by ${-d}`) : (d > 0 ? `winning by ${d}` : `losing by ${-d}`);
-  return `<span class="lpick ${cls}">${t.logo ? `<img src="${esc(t.logo)}" alt="">` : ''}Your pick: ${esc(ab)} • ${word}</span>`;
+  return `<span class="lpick ${cls}">${t.logo ? `<img src="${esc(t.logo)}" alt="">` : ''}${label}: ${esc(ab)} • ${word}</span>`;
 }
 function liveRow(g, side) {
   const t = g[side], o = side === 'away' ? g.home : g.away, has = g.sit.pos && g.sit.pos === t.id;
   return `<div class="lrow ${t.score > o.score ? 'lead' : t.score < o.score ? 'trail' : ''}">${t.logo ? `<img src="${esc(t.logo)}" alt="">` : '<span></span>'}` +
-    `<span class="nm">${esc(t.abbr)}<small>${esc(t.rec || '')}</small></span><span class="pos">${has ? '◀︎ ball' : ''}</span><span class="lsc">${t.score}</span></div>`;
+    `<span class="nm">${t.rank ? `<i class="rkn">${t.rank}</i>` : ''}${esc(t.abbr)}<small>${esc(t.rec || '')}</small></span><span class="pos">${has ? '◀︎ ball' : ''}</span><span class="lsc">${t.score}</span></div>`;
 }
 function renderLive() {
   if (liveGame) { renderGame(); return; }
@@ -2470,13 +2624,27 @@ const GSTATS = [['Total Yards', 1], ['Passing', 1], ['Rushing', 1], ['1st Downs'
 function renderGame() {
   const g = live.games.find(x => x.id === liveGame);
   if (!g) { liveGame = null; renderLive(); return; }
-  const s = gameSums[g.id], d = s && s.d, A = g.away, H = g.home;
+  keepGamePlace('#livebox', () => { $('#livebox').innerHTML = gameHtml(g, gameSums[g.id], pickChip(g), 'data-back'); });
+}
+/** A redraw of a game page that keeps the same play or section at the same spot on screen. */
+function keepGamePlace(box, update) {
+  const keep = [...document.querySelectorAll(`${box} [data-pid], ${box} .wzbox h4`)].find(e => e.getBoundingClientRect().top > 0);
+  const kid = keep && (keep.dataset.pid || keep.textContent), ktop = keep && keep.getBoundingClientRect().top;
+  update();
+  if (keep) {
+    const again = [...document.querySelectorAll(`${box} [data-pid], ${box} .wzbox h4`)].find(e => (e.dataset.pid || e.textContent) === kid);
+    if (again) window.scrollBy(0, again.getBoundingClientRect().top - ktop);
+  }
+}
+/** One game's page: score, situation, win chance, quarters, team stats, leaders, play-by-play, scoring plays. */
+function gameHtml(g, s, chip, back) {
+  const d = s && s.d, A = g.away, H = g.home;
   const team = (t, o) => `<div class="gteam ${t.score < o.score && g.state !== 'pre' ? 'trail' : ''}">${t.logo ? `<img src="${esc(t.logo)}" alt="">` : ''}` +
-    `<b>${esc(t.abbr)}</b><small>${esc(t.rec || '')}</small><span class="gs">${g.state === 'pre' ? '' : t.score}</span></div>`;
+    `<b>${t.rank ? `<i class="rkn">${t.rank}</i>` : ''}${esc(t.abbr)}</b><small>${esc(t.rec || '')}</small><span class="gs">${g.state === 'pre' ? '' : t.score}</span></div>`;
   const status = g.state === 'in' ? `<span class="q">● ${esc(g.detail)}</span>` : g.state === 'post' ? `<span class="fin">${esc(g.detail || 'Final')}</span>` : kickoff(g);
-  let html = `<button type="button" class="gback" data-back="1">‹ Live games</button>` +
+  let html = `<button type="button" class="gback" ${back}="1">‹ Live games</button>` +
     `<div class="ghead">${team(A, H)}<div class="gmid">${status}</div>${team(H, A)}</div>` +
-    `<div style="text-align:center">${pickChip(g)}</div>`;
+    `<div style="text-align:center">${chip}</div>`;
   if (g.state === 'in' && (g.sit.dd || g.sit.last)) {
     const pos = g.sit.pos === A.id ? A.abbr : g.sit.pos === H.id ? H.abbr : '';
     html += `<div class="wzbox"><h4>On the field</h4><div class="sit">${pos ? `<span class="tag">🏈 ${esc(pos)} ball</span>` : ''}` +
@@ -2520,13 +2688,7 @@ function renderGame() {
       `<div class="splay">${p.logo ? `<img src="${esc(p.logo)}" alt="" onerror="this.style.visibility='hidden'">` : '<span></span>'}<span>${esc(p.text)}<small>Q${esc(p.q)} • ${esc(p.clock)} • ${esc(p.team)}</small></span>` +
       `<span class="ss">${esc(p.a)}–${esc(p.h)}</span></div>`).join('') + '</div>';
   }
-  const keep = [...document.querySelectorAll('#livebox [data-pid], #livebox .wzbox h4')].find(e => e.getBoundingClientRect().top > 0);
-  const kid = keep && (keep.dataset.pid || keep.textContent), ktop = keep && keep.getBoundingClientRect().top;
-  $('#livebox').innerHTML = html;
-  if (keep) {
-    const again = [...document.querySelectorAll('#livebox [data-pid], #livebox .wzbox h4')].find(e => (e.dataset.pid || e.textContent) === kid);
-    if (again) window.scrollBy(0, again.getBoundingClientRect().top - ktop);
-  }
+  return html;
 }
 
 // ---------------------------------------------------------------- account
@@ -2670,8 +2832,21 @@ async function openProfile() {
   ['#pfemailmsg', '#pfpassmsg'].forEach(k => { $(k).textContent = ''; $(k).classList.remove('ok'); });
   ['#pfcur', '#pfnew', '#pfnew2', '#pfemailpw'].forEach(k => { $(k).value = ''; });
   showTab('prof');
-  renderPush();
+  renderPush(); loadPrefs();
   try { $('#pfemail').value = (await dbCall('GET', cfg.url + '/emails/' + encodeURIComponent(auth.user))) || ''; } catch (e) { /* offline */ }
+}
+// ---- your own email and notification choices (/prefs/<username>; anything not switched off is on)
+let myPrefs = {};
+async function loadPrefs() {
+  const boxes = document.querySelectorAll('#pfprefs [data-pref]');
+  try { myPrefs = (await dbCall('GET', cfg.url + '/prefs/' + encodeURIComponent(auth.user))) || {}; } catch (e) { /* offline or older rules: show everything on */ }
+  boxes.forEach(b => { b.checked = myPrefs[b.dataset.pref] !== false; });
+}
+async function savePref(box) {
+  const m = $('#prefmsg'); m.classList.remove('ok'); m.textContent = '';
+  const next = {...myPrefs, [box.dataset.pref]: box.checked};
+  try { await dbCall('PUT', cfg.url + '/prefs/' + encodeURIComponent(auth.user), next); myPrefs = next; m.classList.add('ok'); m.textContent = 'Saved.'; }
+  catch (e) { box.checked = !box.checked; m.textContent = e.status === 401 ? 'Ask the administrator to install the latest database rules.' : friendly(e); }
 }
 async function saveProfileEmail() {
   const m = $('#pfemailmsg'), pw = $('#pfemailpw').value; m.classList.remove('ok'); m.textContent = '';
@@ -2771,11 +2946,14 @@ $('#refresh').onclick = () => {
 };
 $('#m-nfl').onclick = () => setMode('nfl');
 $('#m-cfp').onclick = () => setMode('cfp');
+$('#c-live').onclick = () => { clive.game = null; setCfpTab('live'); loadCfbLive(); };
 $('#c-top').onclick = () => setCfpTab('top');
 $('#c-br').onclick = () => setCfpTab('br');
 $('#c-lb').onclick = () => setCfpTab('lb');
 $('#cfpbox').addEventListener('click', e => {
   const t = e.target.closest('[data-cs]'); if (t && !t.disabled) { pickCfp(t.dataset.cs, t.dataset.ct); return; }
+  const lv = e.target.closest('[data-clive]'); if (lv) { clive.game = lv.dataset.clive; renderCfp(); window.scrollTo(0, 0); loadCfbGame(clive.game); return; }
+  if (e.target.closest('[data-cback]')) { clive.game = null; renderCfp(); return; }
   const v = e.target.closest('[data-view]'); if (v) { cfp.who = v.dataset.view; cfp.tab = 'br'; cfp.sub = 'full'; renderCfp(); window.scrollTo(0, 0); return; }
   const sub = e.target.closest('[data-sub]'); if (sub) { cfp.sub = sub.dataset.sub; cfp.focus = null; cfp.back = null; renderCfp(); window.scrollTo(0, 0); return; }
   const wz = e.target.closest('[data-wz]'); if (wz) { cfp.sub = 'pick'; cfp.focus = wz.dataset.wz; cfp.back = 'full'; renderCfp(); window.scrollTo(0, 0); return; }
@@ -2792,7 +2970,15 @@ $('#cfpbox').addEventListener('change', e => {
   else cfp.saveMsg = 'Pick a game first, then the tiebreaker saves too.';
 });
 $('#cs-save').onclick = saveCfpSettings;
+$('#arsave').onclick = saveArchive;
+$('#arcsv').onclick = downloadCsv;
+$('#arseason').addEventListener('change', renderArchiveAdmin);
 $('#cs-scoring').addEventListener('change', () => { if (K) $('#cs-about').textContent = (K.SCORING[$('#cs-scoring').value] || K.SCORING.A).about; });
+setInterval(() => {                                   // CFP Live tab: every 20 seconds
+  if (document.hidden || !active() || mode !== 'cfp' || cfp.tab !== 'live') return;
+  loadCfbLive();
+  if (clive.game) loadCfbGame(clive.game);
+}, 20000);
 setInterval(() => {                                   // CFP page: live bracket games every minute, otherwise every 10
   if (document.hidden || !active() || mode !== 'cfp') return;
   const busyDay = cfp.br && cfp.br.games.some(g => g.state === 'in' || (g.state === 'pre' && Math.abs(Date.parse(g.date) - Date.now()) < 3 * 3600e3));
@@ -2812,12 +2998,14 @@ $('#lgpass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin()
 $('#acctbtn').onclick = () => {
   if (mode === 'cfp') { setMode('nfl'); openProfile(); return; } if (!$('#prof').classList.contains('hide') || !$('#admin').classList.contains('hide')) showTab(lastTab); else openProfile(); };
 $('#t-live').onclick = () => { liveGame = null; showTab('live'); };
-$('#livebox').addEventListener('toggle', e => {          // remember which drives are expanded
+const rememberDrive = e => {                         // remember which drives are expanded
   const dr = e.target.closest && e.target.closest('[data-drive]'); if (!dr) return;
   const id = dr.dataset.drive, cur = dr.classList.contains('cur');
   if (cur) { if (dr.open) openDrives.delete('-' + id); else openDrives.add('-' + id); }
   else if (dr.open) openDrives.add(id); else openDrives.delete(id);
-}, true);
+};
+$('#livebox').addEventListener('toggle', rememberDrive, true);
+$('#cfpbox').addEventListener('toggle', rememberDrive, true);
 $('#livebox').addEventListener('click', e => {
   const c = e.target.closest('[data-live]'); if (c) { openGame(c.dataset.live); return; }
   if (e.target.closest('[data-back]')) { liveGame = null; renderLive(); }
@@ -2831,6 +3019,7 @@ $('#nebtn').onclick = submitNeedEmail;
 $('#neemail').addEventListener('keydown', e => { if (e.key === 'Enter') submitNeedEmail(); });
 $('#nelogout').onclick = () => { clearLocalData(); logout(''); };
 $('#acctlogout').onclick = manualLogout;
+document.querySelectorAll('#pfprefs [data-pref]').forEach(b => b.addEventListener('change', () => savePref(b)));
 $('#nubtn').onclick = createLogin;
 $('#dbsel').addEventListener('change', e => { if (e.target.value !== league) { showTab('picks'); enterLeague(e.target.value); } });
 $('#nalogout').onclick = manualLogout;
