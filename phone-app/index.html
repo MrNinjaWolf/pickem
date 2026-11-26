@@ -106,6 +106,7 @@ main{max-width:760px;margin:0 auto}
 .cfpinfo{padding:16px;border-radius:var(--radius);border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:14px;margin-top:8px}
 .cfpinfo b{color:var(--text)}
 .pills{display:flex;gap:6px;padding:8px 4px 0}
+.ptabs{padding:6px 0 4px}
 .pills button{flex:1;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-weight:800;font-size:13px}
 .pills button.on{color:#fff;border-color:transparent;background:linear-gradient(135deg,rgba(239,68,68,.95),rgba(185,28,28,.95))}
 .whos{padding:10px 4px 0;display:flex;gap:6px;overflow-x:auto;flex-wrap:nowrap}
@@ -280,7 +281,6 @@ td.neg{color:var(--bad)}
 
 /* ---------- live */
 #t-live.has::after{content:"";position:absolute;top:7px;right:10px;width:7px;height:7px;border-radius:50%;background:var(--bad);animation:blink 1.2s ease-in-out infinite}
-.tabs.many button{font-size:12.5px;padding:9px 2px}
 #livebox{padding:8px 12px 56px;display:flex;flex-direction:column;gap:12px}
 .lempty{text-align:center;padding:40px 18px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);color:var(--muted)}
 .lempty b{display:block;color:var(--text);font-size:18px;margin-bottom:6px}
@@ -490,7 +490,6 @@ td.neg{color:var(--bad)}
       <button id="t-picks" class="on" type="button">Picks</button>
       <button id="t-score" type="button">Scorecard</button>
       <button id="t-stand" type="button">Standings</button>
-      <button id="t-admin" class="hide" type="button">Admin</button>
     </div>
     <div class="tabs hide" id="cfptabs" role="tablist" style="--n:3">
       <span class="tabind" id="cfpind"></span>
@@ -582,6 +581,7 @@ td.neg{color:var(--bad)}
     </section>
     <section id="prof" class="view hide">
       <div style="padding:6px 16px 56px">
+        <div class="pills ptabs hide" role="tablist"><button type="button" data-ptab="prof" class="on">Profile</button><button type="button" data-ptab="admin">Admin</button></div>
         <div class="wzbox profhead"><span class="av big" id="pfav"></span><div><div class="pfname" id="pfname"></div><div class="muted" id="pfuser"></div></div></div>
         <div class="wzbox pfform" id="pfdbbox"><h3 style="margin:0">Database</h3><select id="dbsel" aria-label="Database"></select></div>
         <div class="wzbox pfform">
@@ -611,6 +611,7 @@ td.neg{color:var(--bad)}
     </section>
     <section id="admin" class="view hide">
       <div id="admbox" style="padding:6px 16px 56px">
+        <div class="pills ptabs hide" role="tablist"><button type="button" data-ptab="prof">Profile</button><button type="button" data-ptab="admin" class="on">Admin</button></div>
         <div class="wzbox">
           <h3 style="margin:0">Players in <span id="nulg2"></span></h3>
           <p style="margin:4px 0 0;color:var(--muted);font-size:13px">A name belongs to the login with the same username, and only that person can pick for it.</p>
@@ -1272,9 +1273,8 @@ function updateHeader() {
   $('#wkdates').textContent = weekDates();
   $('#wkprev').disabled = i <= 0;
   $('#wknext').disabled = i >= PERIODS.length - 1;
-  $('#t-admin').classList.toggle('hide', !isAdmin());
-  $('#tabs').style.setProperty('--n', isAdmin() ? 5 : 4);
-  $('#tabs').classList.toggle('many', isAdmin());
+  $('#tabs').style.setProperty('--n', 4);
+  document.querySelectorAll('.ptabs').forEach(b => b.classList.toggle('hide', !isAdmin()));   // Profile | Admin, for the administrator
   moveTabIndicator();
   renderAdmin();
 }
@@ -1917,7 +1917,7 @@ async function loadSeason(force) {
   renderStandings();
 }
 
-const TABS = ['live', 'picks', 'score', 'stand', 'admin', 'prof'];   // tab bar order, left to right
+const TABS = ['live', 'picks', 'score', 'stand', 'prof', 'admin'];   // tab bar order, left to right (Profile and Admin open from your name)
 function showTab(t) {
   if (t === 'admin' && !isAdmin()) t = 'picks';
   const from = TABS.findIndex(n => !$('#' + n).classList.contains('hide')), to = TABS.indexOf(t);
@@ -1930,7 +1930,7 @@ function showTab(t) {
       sec.classList.add('view', from < 0 || to === from ? 'view' : to > from ? 'from-r' : 'from-l');
     }
   }
-  if (t !== 'prof') lastTab = t;
+  if (t !== 'prof' && t !== 'admin') lastTab = t;
   $('#weeknav').classList.toggle('collapsed', t === 'live' || t === 'admin' || t === 'prof');
   moveTabIndicator();
   if (t === 'stand') loadSeason(false);
@@ -2738,7 +2738,7 @@ $('#games').addEventListener('click', e => {
 });
 $('#wkprev').onclick = () => setPeriod(PERIODS.indexOf(period) - 1, -1);
 $('#wknext').onclick = () => setPeriod(PERIODS.indexOf(period) + 1, 1);
-$('#t-admin').onclick = () => showTab('admin');
+document.querySelectorAll('.ptabs [data-ptab]').forEach(b => b.onclick = () => { if (b.dataset.ptab === 'admin') showTab('admin'); else openProfile(); });
 $('#paddbtn').onclick = () => { if (addProfile($('#padd').value)) $('#padd').value = ''; };
 $('#padd').addEventListener('keydown', e => { if (e.key === 'Enter') $('#paddbtn').click(); });
 $('#elist').addEventListener('change', e => { const i = e.target.closest('[data-email]'); if (i) saveEmail(i); });
@@ -2810,7 +2810,7 @@ $('#sttitle').addEventListener('change', e => {
 $('#lgbtn').onclick = doLogin;
 $('#lgpass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 $('#acctbtn').onclick = () => {
-  if (mode === 'cfp') { setMode('nfl'); openProfile(); return; } if (!$('#prof').classList.contains('hide')) showTab(lastTab); else openProfile(); };
+  if (mode === 'cfp') { setMode('nfl'); openProfile(); return; } if (!$('#prof').classList.contains('hide') || !$('#admin').classList.contains('hide')) showTab(lastTab); else openProfile(); };
 $('#t-live').onclick = () => { liveGame = null; showTab('live'); };
 $('#livebox').addEventListener('toggle', e => {          // remember which drives are expanded
   const dr = e.target.closest && e.target.closest('[data-drive]'); if (!dr) return;
