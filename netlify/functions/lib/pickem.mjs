@@ -152,6 +152,9 @@ function leaguesOf(d, user) {
     return name && {lg, name};
   }).filter(Boolean);
 }
+/** Each player's own choices (Profile page). Anything not switched off is on. The admin settings still apply on top. */
+export const PREF_KEYS = ['resultsEmail', 'resultsPush', 'remindEmail', 'remindPush', 'gamePush', 'cfpEmail', 'cfpPush'];
+export const wants = (d, user, key) => ((((d || {}).prefs || {})[user]) || {})[key] !== false;
 function recipients(d) {
   const out = [];
   for (const [user, email] of Object.entries(d.emails || {})) {
@@ -285,9 +288,9 @@ async function tidyUp(q, kick, t, log) {
 
 /** Loads everything a run needs. */
 async function loadState(q) {
-  const [access, emails, leagues, sent, kick, subs, settings, final] = await Promise.all(
-    ['/access', '/emails', '/leagues', '/mail/sent', '/kickoffs', '/push', '/settings/notify', '/mail/final'].map(p => q('GET', p).catch(() => null)));
-  const d = {access: access || {}, emails: emails || {}, leagues: leagues || {}, sent: sent || {}};
+  const [access, emails, leagues, sent, kick, subs, settings, final, prefs] = await Promise.all(
+    ['/access', '/emails', '/leagues', '/mail/sent', '/kickoffs', '/push', '/settings/notify', '/mail/final', '/prefs'].map(p => q('GET', p).catch(() => null)));
+  const d = {access: access || {}, emails: emails || {}, leagues: leagues || {}, sent: sent || {}, prefs: prefs || {}};
   const phones = Object.entries(subs || {}).filter(([, s]) => s && Object.keys(s).length)
     .map(([user, s]) => ({user, subs: s, leagues: leaguesOf(d, user)})).filter(p => p.leagues.length);
   return {d, kick: kick || {}, phones, s: readSettings(settings), final: final || {}};
@@ -347,13 +350,13 @@ export async function runOnce({transport = mailer(), log = console.log} = {}) {
       if (t - seen >= s.resultsDelayMin * 60000) {
         const next = weeks.find(x => x.i === w.i + 1);
         if (s.resultsEmail) for (const r of people) {
-          if (was(w.key, 'done', r.user)) continue;
+          if (was(w.key, 'done', r.user) || !wants(d, r.user, 'resultsEmail')) continue;
           const msg = doneEmail(d, r, w, next, await tablesFor(r.leagues, w.key.split('-')[0]));
           try { await send(transport, r.email, msg.subject, msg.title, msg.lines, opts); await mark(w.key, 'done', r.user); count++; log(`sent results for ${w.label} to ${r.user}`); }
           catch (e) { log(`could not send results for ${w.label} to ${r.user}: ${e.message}`); }
         }
         if (s.resultsPush && canPush) for (const p of phones) {
-          if (was(w.key, 'pushdone', p.user)) continue;
+          if (was(w.key, 'pushdone', p.user) || !wants(d, p.user, 'resultsPush')) continue;
           const {lg, name} = p.leagues[0], pk = picksOf(d, lg, w.key, name);
           let c = 0, l = 0;
           for (const g of w.games) { if (!pk[g.id]) continue; const win = winner(g); if (win === 'TIE') continue; if (pk[g.id] === win) c++; else l++; }
@@ -368,7 +371,7 @@ export async function runOnce({transport = mailer(), log = console.log} = {}) {
     for (const slot of reminderSlots(w, s, t)) {
       if (s.remindEmail) for (const r of people) {
         const kind = 'remind' + slot.suffix;
-        if (was(w.key, kind, r.user)) continue;
+        if (was(w.key, kind, r.user) || !wants(d, r.user, 'remindEmail')) continue;
         const msg = remindEmail(d, r, w, slot, t);
         if (!msg) continue;
         try { await send(transport, r.email, msg.subject, msg.title, msg.lines, opts); await mark(w.key, kind, r.user); count++; log(`sent ${kind} for ${w.label} to ${r.user}`); }
@@ -376,7 +379,7 @@ export async function runOnce({transport = mailer(), log = console.log} = {}) {
       }
       if (s.remindPush && canPush) for (const p of phones) {
         const kind = 'pushremind' + slot.suffix;
-        if (was(w.key, kind, p.user)) continue;
+        if (was(w.key, kind, p.user) || !wants(d, p.user, 'remindPush')) continue;
         const {per} = missingFor(d, p.leagues, w, slot, t), missing = Math.max(0, ...per.map(x => x.left));
         if (!missing) continue;
         const n = await pushTo(q, keys, p.user, p.subs, {title: slot.perDay ? `⏰ ${etWeekday(slot.first)}'s games start ${untilText(slot.first - t)}` : `⏰ ${w.label} picks lock soon`,
@@ -390,7 +393,7 @@ export async function runOnce({transport = mailer(), log = console.log} = {}) {
       if (g.state !== 'post' || t - Date.parse(g.date) > 12 * 3600e3) continue;   // games that finished recently
       const win = winner(g), kind = 'g' + g.id;
       for (const p of phones) {
-        if (was(w.key, kind, p.user)) continue;
+        if (was(w.key, kind, p.user) || !wants(d, p.user, 'gamePush')) continue;
         const pick = p.leagues.map(({lg, name}) => picksOf(d, lg, w.key, name)[g.id]).find(Boolean);
         if (!pick) continue;
         const right = pick === win, score = `${g.away.abbr} ${g.away.score} – ${g.home.score} ${g.home.abbr}`;
@@ -417,6 +420,7 @@ export async function remindNow({transport = mailer(), log = console.log} = {}) 
   const slot = {suffix: '-now', first: Math.min(...open.map(g => Date.parse(g.date))), games: open, perDay: false};
   let emails = 0, pushes = 0;
   if (s.remindEmail) for (const r of recipients(d)) {
+    if (!wants(d, r.user, 'remindEmail')) continue;
     const msg = remindEmail(d, r, w, slot, t);
     if (!msg) continue;
     try { await send(transport, r.email, msg.subject, msg.title, msg.lines, {fromName: s.fromName, note: s.note}); emails++; }
@@ -424,6 +428,7 @@ export async function remindNow({transport = mailer(), log = console.log} = {}) 
   }
   const keys = s.remindPush && phones.length ? await vapidKeys(q, {create: true}) : null;
   if (keys) for (const p of phones) {
+    if (!wants(d, p.user, 'remindPush')) continue;
     const missing = Math.max(0, ...missingFor(d, p.leagues, w, slot, t).per.map(x => x.left));
     if (!missing) continue;
     pushes += await pushTo(q, keys, p.user, p.subs, {title: `⏰ ${w.label} picks`, body: `You still have ${missing} game${missing === 1 ? '' : 's'} to pick. Next kickoff ${et(slot.first)}.`, url: appUrl()}, log);
@@ -456,12 +461,12 @@ async function runCfp({q, d, people, phones, keys, opts, transport, log, t, was,
   const url = appUrl() + '/?cfp=1';
   let count = 0;
   const email = async (kind, who, subject, title, lines) => {
-    if (was(key, kind, who.user)) return;
+    if (was(key, kind, who.user) || !wants(d, who.user, 'cfpEmail')) return;
     try { await send(transport, who.email, subject, title, lines, opts); await mark(key, kind, who.user); count++; log(`sent CFP ${kind} to ${who.user}`); }
     catch (e) { log(`could not send CFP ${kind} to ${who.user}: ${e.message}`); }
   };
   const push = async (kind, ph, msg) => {
-    if (!keys || was(key, kind, ph.user)) return;
+    if (!keys || was(key, kind, ph.user) || !wants(d, ph.user, 'cfpPush')) return;
     const n = await pushTo(q, keys, ph.user, ph.subs, {...msg, url}, log);
     if (n) { await mark(key, kind, ph.user); count += n; }
   };

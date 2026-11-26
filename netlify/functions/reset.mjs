@@ -16,7 +16,10 @@ export default async req => {
   const rec = await q('GET', `/resets/${hash}`);
   if (!rec || !rec.user || rec.exp < Date.now()) return reply({error: 'This reset link has expired or was already used. Ask for a new one.'}, 400);
   try { await setPassword(rec.user, String(password)); }
-  catch (e) { return reply({error: /NO_SUCH_USER/.test(e.message) ? 'That account no longer exists.' : 'Could not change the password: ' + e.message + '. Try the link again.'}, 500); }
+  catch (e) {
+    console.log('reset: could not set the password:', e.message);     // details stay in the Netlify log
+    return reply({error: /NO_SUCH_USER/.test(e.message) ? 'That account no longer exists.' : 'Could not change the password right now. Try the link again in a minute.'}, 500);
+  }
   await q('DELETE', `/resets/${hash}`);               // used up only once the password has changed
   await logEvent(q, rec.user, `${rec.user} reset their password with an email link`);
   return reply({ok: true, user: rec.user});
