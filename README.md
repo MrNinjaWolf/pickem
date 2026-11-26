@@ -31,6 +31,8 @@ into Firebase by hand: **Build > Realtime Database > Rules**, replace everything
 
 ## Things to know
 
+- `dakota` opens **Admin** by tapping their name at the top right, then **Admin** (Profile | Admin).
+  Below, "the Admin tab" means that page.
 - Creating logins on the Admin tab goes through the server (it needs `FIREBASE_SERVICE_ACCOUNT`).
   With that set up, switch off Firebase's public sign-up so nobody else can make accounts:
   Authentication > Settings > User actions > untick **Enable create (sign-up)**.
