@@ -60,6 +60,36 @@ img{user-select:none;-webkit-user-drag:none}
 .linkbtn:active{color:#fff}
 .linkbtn.spin .ic{display:inline-block;animation:spin .7s linear infinite}
 main{max-width:760px;margin:0 auto}
+/* ---------- iPhone Duo (unfolded) */
+html.duo .toprow,html.duo #appnav,html.duo .statusrow,html.duo main{max-width:none}
+.duo2{display:grid;grid-template-columns:minmax(210px,40%) 1fr;gap:12px;align-items:start}
+#games .duo2{padding:4px 12px 40px}
+.duo2 .dlist{position:sticky;top:calc(var(--hdr,150px) + 8px);max-height:calc(100vh - var(--hdr,150px) - 24px);overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-bottom:8px;-webkit-overflow-scrolling:touch}
+.duo2 .dpane{min-width:0;display:flex;flex-direction:column;gap:12px}
+.duo2 .dpane .wzbox{margin-top:0}
+.duo2 .gback{display:none}
+.drow{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:6px;width:100%;padding:9px 10px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:inherit;font-size:13px;text-align:left}
+.drow.on{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
+.drow .dm{display:flex;align-items:center;gap:4px;min-width:0;grid-column:1/-1}
+.drow .dm img{width:20px;height:20px;object-fit:contain}
+.drow .dm i{font-style:normal;color:var(--muted);margin:0 2px}
+.drow .dt{font-size:11px;color:var(--muted)}
+.drow .dlive{color:var(--bad);font-weight:800}
+.drow .dgo{font-size:10px;font-weight:800;color:var(--gold);letter-spacing:.06em}
+.drow .dsc{font-weight:800;font-variant-numeric:tabular-nums}
+.drow .dpk{font-size:11px;font-weight:800;padding:2px 7px;border-radius:999px;background:color-mix(in srgb,var(--c) 55%,transparent)}
+.drow .dpk.ok{box-shadow:0 0 0 1px var(--green) inset}.drow .dpk.bad{box-shadow:0 0 0 1px var(--bad) inset;opacity:.7}
+.dhint{margin:6px 2px 0;font-size:12px}
+.duo2 .lcard.on{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
+html.duo .tree{overflow-x:visible;margin:0;padding:8px 0 14px;gap:6px}
+html.duo .tree::after{display:none}
+html.duo .tcol{flex:1 1 0;width:auto;min-width:0}
+html.duo .trw{grid-template-columns:14px 16px 1fr auto 10px;gap:4px;padding:6px 5px;font-size:12px}
+html.duo .trw img,html.duo .trw i{width:16px;height:16px}
+html.duo .tch img{width:40px;height:40px}
+html.duo #prof > div,html.duo #admbox{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;align-items:start;max-width:none}
+html.duo #prof > div > .ptabs,html.duo #admbox > .ptabs,html.duo #prof .profhead,html.duo #acctlogout{grid-column:1/-1}
+html.duo #prof .wzbox,html.duo #admbox .wzbox{margin-top:12px}
 /* ---------- CFP */
 .lsw{display:flex;padding:3px;border-radius:11px;background:var(--surface);border:1px solid var(--line);margin-left:2px}
 .lsw button{border:0;background:none;color:var(--muted);font-weight:800;font-size:13px;letter-spacing:.02em;padding:6px 11px;border-radius:8px;transition:background .25s,color .25s}
@@ -613,6 +643,12 @@ td.neg{color:var(--bad)}
           <label class="sw"><input type="checkbox" data-pref="cfpPush"><span>Bracket notifications (announced, reminder, after each round)</span></label>
           <div class="err" id="prefmsg"></div>
         </div>
+        <div class="wzbox pfform" id="pflayout">
+          <h3 style="margin:0">Layout</h3>
+          <p class="muted" style="margin:4px 0 0">The iPhone Duo gets its own layout when it's unfolded. Every other phone, tablet and computer uses the standard one.</p>
+          <select id="layoutsel" aria-label="Layout"><option value="auto">Automatic</option><option value="duo">iPhone Duo layout</option><option value="std">Standard layout</option></select>
+          <p class="muted" id="scrinfo" style="margin:8px 0 0;font-size:12px"></p>
+        </div>
         <button class="btn alt" id="acctlogout" type="button" style="width:100%;margin-top:12px">Log out</button>
       </div>
     </section>
@@ -767,7 +803,24 @@ let leagues = LS('leagues') || [];        // databases this user has been given
 let league = LS('league') || '';
 let profiles = [], picks = {}, profile = null;   // picks: "profile|weekKey|gameId" -> team abbreviation
 let screen = 'login', loadedOnce = false;
-let mode = 'nfl';                        // 'nfl' or 'cfp' (the College Football Playoff page); the app always opens on NFL
+let mode = 'nfl';
+// ---- iPhone Duo (unfolded): its own layout. Safari doesn't say which iPhone it is, so it's recognised by
+// the inner screen: an iPhone touch screen about 626 x 890 points (no other iPhone is wider than ~440).
+// Folded (the 5.4" cover screen) it's phone-sized and uses the standard layout, like every other device.
+let isDuo = false, duoSel = null;
+function duoScreen() {
+  const w = innerWidth, h = innerHeight, a = Math.min(w, h), b = Math.max(w, h);
+  return /iPhone/.test(navigator.userAgent) && matchMedia('(pointer: coarse)').matches && a >= 580 && a <= 720 && b >= 780 && b <= 1000;
+}
+function checkDuo() {
+  const pref = LS('layout') || 'auto', d = pref === 'duo' || (pref === 'auto' && duoScreen());
+  document.documentElement.style.setProperty('--hdr', (document.querySelector('.top') || {offsetHeight: 0}).offsetHeight + 'px');
+  if ($('#scrinfo')) $('#scrinfo').textContent = `This screen: ${innerWidth} \u00D7 ${innerHeight} points${duoScreen() ? ' (an unfolded iPhone Duo)' : ''}. Using the ${d ? 'iPhone Duo' : 'standard'} layout.`;
+  if (d === isDuo) return;
+  isDuo = d; document.documentElement.classList.toggle('duo', d);
+  if (!d) { liveGame = null; clive.game = null; }            // the standard layout opens on the list
+  if (screen === 'app') { render(); if (!$('#live').classList.contains('hide')) renderLive(); if (mode === 'cfp') renderCfp(); }
+}                        // 'nfl' or 'cfp' (the College Football Playoff page); the app always opens on NFL
 let season = now.getMonth() < 2 ? now.getFullYear() - 1 : now.getFullYear();
 let period = null;
 usePeriods(LS('cal.' + season) || periodsFrom(null, season));
@@ -945,7 +998,7 @@ function showScreen(s) {
   ['login', 'noaccess', 'needemail', 'resetpw', 'app'].forEach(n => $('#' + n).classList.toggle('hide', n !== s));
   $('#hdrright').classList.toggle('hide', s === 'login' || s === 'resetpw');
   $('#appnav').classList.toggle('hide', s !== 'app');
-  updateModeSwitch();
+  updateModeSwitch(); checkDuo();
 }
 /** The database URL and API key come from the site's Netlify settings (/api/config), else from the last
  *  copy saved on this device. */
@@ -1618,6 +1671,42 @@ function renderWizard(list) {
     `<div class="wzfoot"><button type="button" class="btn alt" data-act="skip" data-g="${esc(g.id)}">Skip for now</button>` +
     `<button type="button" class="btn alt" data-act="all">Show all games</button></div></div>`;
 }
+/** iPhone Duo: every game in a list on the left, the chosen game's matchup and stats on the right. */
+function renderPicksDuo(hint) {
+  if (!games.some(g => g.id === duoSel)) duoSel = (toPick()[0] || games[0] || {}).id || null;
+  const g = games.find(x => x.id === duoSel);
+  let made = 0, w = 0, l = 0;
+  games.forEach(x => { const o = outcome(profile, x); if (o !== 'N') made++; if (o === 'W') w++; if (o === 'L') l++; });
+  $('#summary').innerHTML = `<b>Your picks</b><div class="stats"><span class="stat">${made}/${games.length} <i>picked</i></span>` +
+    `<span class="stat" style="color:var(--green)">${w} <i>correct</i></span><span class="stat" style="color:var(--bad)">${l} <i>wrong</i></span></div><small>${hint}</small>`;
+  $('#games').classList.remove('stagger');
+  if (!games.length) { $('#games').innerHTML = '<div class="empty">No games to show for this week.</div>'; return; }
+  const rows = games.map(x => {
+    const pick = picks[pk(profile, x.id)], o = outcome(profile, x), open = mine(profile) && pickable(x) && !pick;
+    const t = pick && (x.away.abbr === pick ? x.away : x.home);
+    const right = x.state === 'pre' ? (open ? '<span class="dgo">PICK</span>' : '') : `<span class="dsc">${x.away.score}\u2013${x.home.score}</span>`;
+    const chip = t ? `<span class="dpk ${o === 'W' ? 'ok' : o === 'L' ? 'bad' : ''}" style="--c:${esc(t.color)}">${esc(pick)}${o === 'W' ? ' \u2713' : o === 'L' ? ' \u2717' : ''}</span>` : '';
+    const lg = tm => tm.logo ? `<img src="${esc(tm.logo)}" alt="" loading="lazy">` : '';
+    return `<button type="button" class="drow${x.id === duoSel ? ' on' : ''}${open ? ' open' : ''}" data-dg="${esc(x.id)}">` +
+      `<span class="dm">${lg(x.away)}<b>${esc(x.away.abbr)}</b><i>@</i>${lg(x.home)}<b>${esc(x.home.abbr)}</b></span>` +
+      `<span class="dt">${x.state === 'in' ? '<span class="dlive">LIVE</span>' : x.state === 'pre' ? esc(new Date(x.date).toLocaleDateString([], {weekday: 'short'})) : ''}</span>${chip}${right}</button>`;
+  }).join('');
+  let pane = '';
+  if (g) {
+    const pick = picks[pk(profile, g.id)], canPick = mine(profile) && pickable(g);
+    const d = g.state === 'pre' ? summaryOf(g) : null;
+    if (g.state === 'pre') loadSummary(g);
+    const team = side => { const b = wzTeam(g, side); return pick === g[side].abbr ? b.replace('class="wzteam"', 'class="wzteam sel"').replace('>PICK<', '>PICKED<') : b; };
+    pane = `<div class="wzhead"><b>${esc(g.away.abbr)} @ ${esc(g.home.abbr)}</b><span>${g.state === 'pre' ? kickoff(g) : esc(g.detail)}</span></div>` +
+      (canPick ? `<div class="wzteams">${team('away')}<div class="wzat">@</div>${team('home')}</div><p class="muted dhint">${pick ? 'Tap the other team to change your pick, or the same team to clear it.' : 'Tap a team to pick it.'}</p>`
+        : `<div class="card">${teamBtn(g, 'away')}${mid(g)}${teamBtn(g, 'home')}</div><p class="muted dhint">${g.state === 'pre' ? '' : 'This game has started: picks are locked.'}</p>`) +
+      (d ? oddsBox(g, d) + compareBox(g, d) + leadersBox(g, d) + injuryBox(g, d) + formBox(g, d)
+        : g.state === 'pre' ? (sumFail.has(g.id) ? '<div class="wzwait">Couldn\'t load stats from ESPN.</div>' : '<div class="wzwait loading">Loading stats\u2026</div>') : '');
+  }
+  const listTop = (document.querySelector('#games .dlist') || {}).scrollTop || 0;
+  $('#games').innerHTML = clearBtn() + `<div class="duo2"><div class="dlist">${rows}</div><div class="dpane">${pane}</div></div>`;
+  const dl = document.querySelector('#games .dlist'); if (dl) dl.scrollTop = listTop;
+}
 function mid(g) {
   const sc = g.state === 'pre' ? '@' : `${g.away.score} \u2013 ${g.home.score}`;
   const st = g.state === 'in' ? `<div class="st live"><span class="dot"></span>LIVE<br>${esc(g.detail)}</div>`
@@ -1664,6 +1753,7 @@ function renderPicks() {
   const hint = mine(profile) ? (toPick().length ? 'Tap an open game to see its matchup and pick it. ' : '') + 'Tap a picked team again to clear it. Picks lock at kickoff.'
     : myProfile() ? `You're looking at ${esc(profile)}'s picks. You can only pick for yourself.`
     : "Your name isn't on the list yet, so you can't make picks. Ask the administrator to add it.";
+  if (isDuo) { renderPicksDuo(hint); return; }
   const open = mine(profile) && !listMode ? toPick().filter(g => !skipped.has(g.id)) : [];
   const fi = wzFirst ? open.findIndex(g => g.id === wzFirst) : -1;
   if (fi > 0) open.unshift(open.splice(fi, 1)[0]);               // the game tapped in the list comes first
@@ -2159,6 +2249,17 @@ function bracketChip(g) {
 }
 function renderCfpLive() {
   const box = $('#cfpbox');
+  if (isDuo && clive.at) {
+    const r = duoLiveHtml(clive.games, clive.game, clive.sums, bracketChip, 'data-clive', null);
+    if (r) {
+      if (!clive.sums[r.g.id]) loadCfbGame(r.g.id);
+      clive.game = r.g.id;
+      const top = (document.querySelector('#cfpbox .dlist') || {}).scrollTop || 0;
+      keepGamePlace('#cfpbox .dpane', () => { box.innerHTML = '<div class="cfphead"><h2>Live</h2></div>' + r.html; });
+      const dl = document.querySelector('#cfpbox .dlist'); if (dl) dl.scrollTop = top;
+      return;
+    }
+  }
   if (clive.game) {
     const g = clive.games.find(x => x.id === clive.game);
     if (g) { keepGamePlace('#cfpbox', () => { box.innerHTML = gameHtml(g, clive.sums[g.id], bracketChip(g), 'data-cback'); }); return; }
@@ -2552,7 +2653,30 @@ function liveRow(g, side) {
   return `<div class="lrow ${t.score > o.score ? 'lead' : t.score < o.score ? 'trail' : ''}">${t.logo ? `<img src="${esc(t.logo)}" alt="">` : '<span></span>'}` +
     `<span class="nm">${t.rank ? `<i class="rkn">${t.rank}</i>` : ''}${esc(t.abbr)}<small>${esc(t.rec || '')}</small></span><span class="pos">${has ? '◀︎ ball' : ''}</span><span class="lsc">${t.score}</span></div>`;
 }
+/** iPhone Duo Live: the games on the left, the chosen game's page on the right. */
+function duoLiveHtml(list, sel, sums, chipOf, attr, empty) {
+  const on = list.filter(g => g.state === 'in');
+  const finals = list.filter(g => g.state === 'post' && Date.now() - Date.parse(g.date) < 16 * 3600e3);
+  const shown = [...on, ...finals];
+  const g = shown.find(x => x.id === sel) || shown[0];
+  if (!g) return empty;
+  const card = x => `<button type="button" class="lcard${x.state === 'post' ? ' fin' : ''}${x.id === g.id ? ' on' : ''}" ${attr}="${esc(x.id)}">` + liveRow(x, 'away') + liveRow(x, 'home') +
+    `<div class="lmeta"><span class="${x.state === 'post' ? 'f' : 'q'}">${esc(x.detail || 'Final')}</span><span>${x.state === 'in' ? esc(x.sit.dd) : ''}</span></div>` + chipOf(x) + '</button>';
+  return {g, html: `<div class="duo2"><div class="dlist">${on.map(card).join('')}${finals.length ? '<h4 class="lhead">Final today</h4>' + finals.map(card).join('') : ''}</div>` +
+    `<div class="dpane">${gameHtml(g, sums[g.id], chipOf(g), 'data-back')}</div></div>`};
+}
 function renderLive() {
+  if (isDuo && live.at) {
+    const r = duoLiveHtml(live.games, liveGame, gameSums, g => pickChip(g), 'data-live', null);
+    if (r) {
+      if (!gameSums[r.g.id]) loadGameSummary(r.g.id);
+      liveGame = r.g.id;
+      const top = (document.querySelector('#livebox .dlist') || {}).scrollTop || 0;
+      keepGamePlace('#livebox .dpane', () => { $('#livebox').innerHTML = r.html; });
+      const dl = document.querySelector('#livebox .dlist'); if (dl) dl.scrollTop = top;
+      return;
+    }
+  }
   if (liveGame) { renderGame(); return; }
   const on = live.games.filter(g => g.state === 'in');
   const finals = live.games.filter(g => g.state === 'post' && Date.now() - Date.parse(g.date) < 16 * 3600e3);
@@ -2611,17 +2735,21 @@ function pbpBox(d) {
   }).join('') + '</div>';
 }
 async function loadGameSummary(id) {
+  if (loadGameSummary.busy === id) return;
+  loadGameSummary.busy = id;
   try {
     const r = await fetch(ESPN.replace('/scoreboard', '/summary') + '?event=' + encodeURIComponent(id));
     if (!r.ok) throw new Error('HTTP ' + r.status);
     gameSums[id] = {t: Date.now(), d: readGameSummary(await r.json())};
   } catch (e) { if (!gameSums[id]) gameSums[id] = {t: 0, d: null, fail: true}; }
+  loadGameSummary.busy = null;
   if (liveGame === id && !$('#live').classList.contains('hide')) renderGame();
 }
-function openGame(id) { liveGame = id; renderLive(); window.scrollTo(0, 0); loadGameSummary(id); }
+function openGame(id) { liveGame = id; renderLive(); if (!isDuo) window.scrollTo(0, 0); loadGameSummary(id); }
 const GSTATS = [['Total Yards', 1], ['Passing', 1], ['Rushing', 1], ['1st Downs', 1], ['3rd down efficiency', 0], ['4th down efficiency', 0],
   ['Red Zone (Made-Att)', 0], ['Turnovers', -1], ['Sacks-Yards Lost', 0], ['Penalties', 0], ['Possession', 0]];
 function renderGame() {
+  if (isDuo) { renderLive(); return; }
   const g = live.games.find(x => x.id === liveGame);
   if (!g) { liveGame = null; renderLive(); return; }
   keepGamePlace('#livebox', () => { $('#livebox').innerHTML = gameHtml(g, gameSums[g.id], pickChip(g), 'data-back'); });
@@ -2833,6 +2961,7 @@ async function openProfile() {
   ['#pfcur', '#pfnew', '#pfnew2', '#pfemailpw'].forEach(k => { $(k).value = ''; });
   showTab('prof');
   renderPush(); loadPrefs();
+  $('#layoutsel').value = LS('layout') || 'auto'; checkDuo();
   try { $('#pfemail').value = (await dbCall('GET', cfg.url + '/emails/' + encodeURIComponent(auth.user))) || ''; } catch (e) { /* offline */ }
 }
 // ---- your own email and notification choices (/prefs/<username>; anything not switched off is on)
@@ -2897,8 +3026,21 @@ $('#games').addEventListener('click', e => {
     if (act.dataset.act === 'all') listMode = true; else resetWizard();
     renderPicks(); showPicksTop(); return;
   }
+  const dr = e.target.closest('[data-dg]');
+  if (dr) { duoSel = dr.dataset.dg; renderPicks(); return; }
   const b = e.target.closest('.team, .wzteam');
   if (!b) return;
+  if (isDuo) {
+    if (!b.classList.contains('wzteam')) return;          // locked games on the right are just for show
+    pick(b.dataset.g, b.dataset.t);
+    if (picks[pk(profile, b.dataset.g)] === b.dataset.t) {
+      toast('Picked ' + b.dataset.t);
+      const open = toPick(), i = games.findIndex(x => x.id === b.dataset.g);
+      const next = open.find(x => games.indexOf(x) > i) || open[0];
+      if (next) { duoSel = next.id; renderPicks(); }
+    }
+    return;
+  }
   const wizard = b.classList.contains('wzteam');
   if (!wizard && mine(profile)) {                      // an open game in the list: show its matchup, then the other open games
     const g = games.find(x => x.id === b.dataset.g);
@@ -2952,7 +3094,7 @@ $('#c-br').onclick = () => setCfpTab('br');
 $('#c-lb').onclick = () => setCfpTab('lb');
 $('#cfpbox').addEventListener('click', e => {
   const t = e.target.closest('[data-cs]'); if (t && !t.disabled) { pickCfp(t.dataset.cs, t.dataset.ct); return; }
-  const lv = e.target.closest('[data-clive]'); if (lv) { clive.game = lv.dataset.clive; renderCfp(); window.scrollTo(0, 0); loadCfbGame(clive.game); return; }
+  const lv = e.target.closest('[data-clive]'); if (lv) { clive.game = lv.dataset.clive; renderCfp(); if (!isDuo) window.scrollTo(0, 0); loadCfbGame(clive.game); return; }
   if (e.target.closest('[data-cback]')) { clive.game = null; renderCfp(); return; }
   const v = e.target.closest('[data-view]'); if (v) { cfp.who = v.dataset.view; cfp.tab = 'br'; cfp.sub = 'full'; renderCfp(); window.scrollTo(0, 0); return; }
   const sub = e.target.closest('[data-sub]'); if (sub) { cfp.sub = sub.dataset.sub; cfp.focus = null; cfp.back = null; renderCfp(); window.scrollTo(0, 0); return; }
@@ -3019,6 +3161,11 @@ $('#nebtn').onclick = submitNeedEmail;
 $('#neemail').addEventListener('keydown', e => { if (e.key === 'Enter') submitNeedEmail(); });
 $('#nelogout').onclick = () => { clearLocalData(); logout(''); };
 $('#acctlogout').onclick = manualLogout;
+$('#layoutsel').addEventListener('change', e => { setLS('layout', e.target.value); checkDuo(); });
+addEventListener('resize', checkDuo);
+checkDuo();
+if (window.ResizeObserver) new ResizeObserver(() => document.documentElement.style.setProperty('--hdr', $('.top').offsetHeight + 'px')).observe($('.top'));   // the side list sits just under the header
+addEventListener('orientationchange', () => setTimeout(checkDuo, 200));
 document.querySelectorAll('#pfprefs [data-pref]').forEach(b => b.addEventListener('change', () => savePref(b)));
 $('#nubtn').onclick = createLogin;
 $('#dbsel').addEventListener('change', e => { if (e.target.value !== league) { showTab('picks'); enterLeague(e.target.value); } });

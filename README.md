@@ -18,6 +18,22 @@ A web app for weekly NFL picks, plus a College Football Playoff page. Netlify pu
 - The app reads the Firebase database URL and Web API key from Netlify (`PICKEM_DB_URL`,
   `PICKEM_API_KEY`, through `/api/config`), so the login screen only asks for a username and password.
 
+## iPhone Duo layout
+
+The iPhone Duo gets its own layout when it's unfolded (its 7.6" inner screen, about 626 x 890
+points). Safari doesn't say which iPhone it is, so the app recognises the Duo by that screen size on
+an iPhone touch screen. Folded (the 5.4" cover screen), it uses the standard layout like every other
+phone, tablet and computer. On the Duo:
+
+- **Picks:** every game in a list on the left; the chosen game's matchup and stats on the right.
+  Picking moves on to the next open game.
+- **Live** (NFL and CFP): live games on the left; the chosen game's page with play-by-play on the right.
+- **CFP bracket:** the whole bracket fits on screen without scrolling sideways.
+- **Profile and Admin:** settings in two columns.
+
+**Profile > Layout** can force the Duo or the standard layout, and shows the screen size the app
+sees (useful if a future model needs the numbers adjusted in `duoScreen()` in `phone-app/index.html`).
+
 ## Database rules
 
 `database.rules.json` holds the database's security rules. After an update, install them from the
